@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Renderring\EZWindows.cpp">
+    <ClCompile Include="Renderring\EZWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="program.cpp">
@@ -24,12 +24,18 @@
     <ClCompile Include="Renderring\Helper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Renderring\EZRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Renderring\EZWindows.h">
+    <ClInclude Include="Renderring\EZWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Renderring\Helper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderring\EZRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

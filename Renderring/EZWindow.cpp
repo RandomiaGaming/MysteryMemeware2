@@ -1,4 +1,4 @@
-#include "EZWindows.h"
+#include "EZWindow.h"
 #include "Helper.h"
 #include <exception>
 
@@ -63,64 +63,65 @@ void EZ::RegisterClass(EZ::ClassSettings settings) {
 
 
 EZ::Window::Window(EZ::WindowSettings settings) {
-	if (settings.Title == NULL) {
-		settings.Title = DefaultWindowTitle;
+	_settings = settings;
+
+	if (_settings.Title == NULL) {
+		_settings.Title = DefaultWindowTitle;
 	}
-	if (settings.ClassName == NULL) {
-		settings.ClassName = DefaultClassName;
+	if (_settings.ClassName == NULL) {
+		_settings.ClassName = DefaultClassName;
 	}
-	if (settings.InitialX == CW_USEDEFAULT) {
-		settings.InitialX = GetSystemMetrics(SM_CXSCREEN) / 4;
+	if (_settings.InitialX == CW_USEDEFAULT) {
+		_settings.InitialX = GetSystemMetrics(SM_CXSCREEN) / 4;
 	}
-	if (settings.InitialY == CW_USEDEFAULT) {
-		settings.InitialY = GetSystemMetrics(SM_CYSCREEN) / 4;
+	if (_settings.InitialY == CW_USEDEFAULT) {
+		_settings.InitialY = GetSystemMetrics(SM_CYSCREEN) / 4;
 	}
-	if (settings.InitialWidth == CW_USEDEFAULT) {
-		settings.InitialWidth = GetSystemMetrics(SM_CXSCREEN) / 2;
+	if (_settings.InitialWidth == CW_USEDEFAULT) {
+		_settings.InitialWidth = GetSystemMetrics(SM_CXSCREEN) / 2;
 	}
-	if (settings.InitialHeight == CW_USEDEFAULT) {
-		settings.InitialHeight = GetSystemMetrics(SM_CYSCREEN) / 2;
+	if (_settings.InitialHeight == CW_USEDEFAULT) {
+		_settings.InitialHeight = GetSystemMetrics(SM_CYSCREEN) / 2;
 	}
-	switch (settings.StylePreset) {
+	switch (_settings.StylePreset) {
 	case Normal:
-		settings.Styles |= WS_OVERLAPPEDWINDOW;
+		_settings.Styles |= WS_OVERLAPPEDWINDOW;
 		break;
 	case Popup:
-		settings.Styles |= WS_POPUPWINDOW;
+		_settings.Styles |= WS_POPUPWINDOW;
 		break;
 	case Boarderless:
-		settings.Styles |= WS_POPUP;
+		_settings.Styles |= WS_POPUP;
 		break;
 	case DontTouchMyStyles:
 	default:
 		break;
 	}
-	if (!settings.LaunchHidden) {
-		settings.Styles |= WS_VISIBLE;
+	if (!_settings.LaunchHidden) {
+		_settings.Styles |= WS_VISIBLE;
 	}
-	if (settings.DragNDropFiles) {
-		settings.ExtendedStyles |= WS_EX_ACCEPTFILES;
+	if (_settings.DragNDropFiles) {
+		_settings.ExtendedStyles |= WS_EX_ACCEPTFILES;
 	}
-	if (settings.IgnoreFocusSwitch) {
-		settings.ExtendedStyles |= WS_EX_NOACTIVATE;
+	if (_settings.IgnoreFocusSwitch) {
+		_settings.ExtendedStyles |= WS_EX_NOACTIVATE;
 	}
-	if (settings.TopMost) {
-		settings.ExtendedStyles |= WS_EX_TOPMOST;
+	if (_settings.TopMost) {
+		_settings.ExtendedStyles |= WS_EX_TOPMOST;
 	}
-	if (settings.HideInTaskbar) {
-		settings.ExtendedStyles |= WS_EX_TOOLWINDOW;
+	if (_settings.HideInTaskbar) {
+		_settings.ExtendedStyles |= WS_EX_TOOLWINDOW;
 	}
 
-	_settings = settings;
 	_handle = CreateWindowEx(
-		settings.ExtendedStyles,
-		settings.ClassName,
-		settings.Title,
-		settings.Styles,
-		settings.InitialX,
-		settings.InitialY,
-		settings.InitialWidth,
-		settings.InitialHeight,
+		_settings.ExtendedStyles,
+		_settings.ClassName,
+		_settings.Title,
+		_settings.Styles,
+		_settings.InitialX,
+		_settings.InitialY,
+		_settings.InitialWidth,
+		_settings.InitialHeight,
 		NULL, // No parent window.
 		NULL, // No target menu.
 		GetModuleHandle(NULL), // Current process instance.
@@ -130,6 +131,7 @@ EZ::Window::Window(EZ::WindowSettings settings) {
 		PrintLastError(); return;
 	}
 
+	// The user data of an EZ Window is always a pointer to that EZ Window.
 	SetWindowLongPtr(_handle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
 }
 void EZ::Window::Show(int showCommand) {
@@ -217,6 +219,9 @@ BOOL EZ::Window::IsShowing() const {
 BOOL EZ::Window::IsDestroyed() const {
 	return !IsWindow(_handle);
 }
+
+
+
 BOOL EZ::ProcessOneMessage(BOOL wait) {
 	MSG msg = { };
 	if (wait)
@@ -237,9 +242,6 @@ BOOL EZ::ProcessOneMessage(BOOL wait) {
 	}
 	return FALSE;
 }
-
-
-
 BOOL EZ::ProcessUntilClear() {
 	BOOL output = FALSE;
 
@@ -264,114 +266,3 @@ BOOL EZ::RunMessagePump() {
 
 	return output;
 }
-
-
-
-
-
-
-/*
-LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	return DefWindowProc(hwnd, uMsg, wParam, lParam);
-}
-void InitWndClass() {
-	WNDCLASS wc = {};
-	wc.style = CS_HREDRAW | CS_VREDRAW; // Redraw windows with this class on horizontal or vertical changes.
-	wc.lpfnWndProc = WndProc;
-	wc.cbClsExtra = 0; // Allocate 0 extra bytes after the class declaration.
-	wc.cbWndExtra = 0; // Allocate 0 extra bytes after windows of this class.
-	wc.hInstance = GetModuleHandle(nullptr);
-	wc.hIcon = nullptr; // Default icon
-	wc.hCursor = LoadCursor(nullptr, IDC_ARROW); // Default cursor from system cursors.
-	wc.hbrBackground = CreateSolidBrush(RGB(0, 0, 0)); // User implamented painting.
-	wc.lpszMenuName = nullptr; // No default menu
-	wc.lpszClassName = L"MysteryWindowClass";
-	::RegisterClass(&wc);
-}
-
-
-
-struct MonitorList {
-	DWORD length;
-	HMONITOR* list;
-};
-BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
-	vector<HMONITOR>* monitors = reinterpret_cast<vector<HMONITOR>*>(dwData);
-
-	monitors->push_back(hMonitor);
-
-	return TRUE;
-}
-MonitorList GetMonitors() {
-	vector<HMONITOR>* monitors = new vector<HMONITOR>();
-	EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, reinterpret_cast<LPARAM>(monitors));
-
-	DWORD length = monitors->size();
-	HMONITOR* monitorsArray = new HMONITOR[length];
-	for (DWORD i = 0; i < length; ++i) {
-		monitorsArray[i] = (*monitors)[i];
-	}
-
-	delete monitors;
-
-	return { length, monitorsArray };
-}
-
-
-
-HWND CreateWnd(HMONITOR monitor) {
-	MONITORINFO monitorInfo;
-	monitorInfo.cbSize = sizeof(MONITORINFO);
-	GetMonitorInfo(monitor, &monitorInfo);
-
-	int x = monitorInfo.rcMonitor.left;
-	int y = monitorInfo.rcMonitor.top;
-	int width = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
-	int height = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
-
-	HWND handle = CreateWindowEx(
-		WS_EX_TOPMOST, // Optional window styles
-		L"MysteryWindowClass", // Window class name
-		L"Mystery Window", // Window title
-		WS_VISIBLE | WS_POPUP, // Window styles
-		x, // X position
-		y, // Y position
-		width, // Width
-		height, // Height
-		nullptr, // Parent window
-		nullptr, // Target menu
-		GetModuleHandle(nullptr), // Instance handle
-		nullptr // Additional data
-	);
-
-	return handle;
-}
-
-
-
-void PumpMessages() {
-	MSG msg = {};
-	while (GetMessage(&msg, nullptr, 0, 0)) {
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}
-}
-
-
-
-void RunWindows() {
-	InitWndClass();
-
-	MonitorList monitors = GetMonitors();
-	HWND* windows = new HWND[monitors.length];
-
-	for (DWORD i = 0; i < monitors.length; i++)
-	{
-		windows[i] = CreateWnd(monitors.list[i]);
-	}
-
-	PumpMessages();
-
-	delete[] monitors.list;
-}
-*/

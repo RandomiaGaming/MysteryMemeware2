@@ -143,13 +143,13 @@ namespace EZ {
 
 		HWND GetHandle() const;
 		RECT GetBounds() const;
-		EZ::WindowSettings GetSettings() const;
+		WindowSettings GetSettings() const;
 		BOOL IsShowing() const;
 		BOOL IsDestroyed() const;
 
 	private:
-		HWND _handle = NULL;
-		EZ::WindowSettings _settings = { };
+		HWND _handle;
+		WindowSettings _settings;
 	};
 
 	// Processes one message from this program's message queue.
