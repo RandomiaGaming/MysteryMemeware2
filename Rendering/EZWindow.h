@@ -50,6 +50,10 @@ namespace EZ {
 		// This is only useful for small PopUps which will close quickly.
 		// Else nothing happens.
 		BOOL SaveClippedGraphics;
+		// If ThisThreadOnly == FALSE then the CS_GLOBALCLASS style is added to Styles.
+		// and the class is availible to all threads in the current process.
+		// Else nothing happens and the class will only be availible to the current thread.
+		BOOL ThisThreadOnly;
 	};
 	void RegisterClass(EZ::ClassSettings settings);
 
@@ -130,15 +134,15 @@ namespace EZ {
 		// Returns early if the window is destroyed.
 		// Optionally waits for a message if the queue is empty.
 		// Returns FALSE if this function call did not process a message else TRUE.
-		BOOL ProcessOneMessage(BOOL wait = FALSE);
+		BOOL ProcessOne(BOOL wait = FALSE);
 		// Processes all messages in this window's message queue.
 		// Returns when window is destroyed.
 		// Returns FALSE if this function call did not process a message else TRUE.
-		BOOL ProcessUntilClear();
+		BOOL ProcessAll();
 		// Processes messages from this window's message queue as they appear.
 		// Returns when the window is destroyed.
 		// Returns FALSE if this function call did not process a message else TRUE.
-		BOOL RunMessagePump();
+		BOOL Run();
 		~Window();
 
 		HWND GetHandle() const;
@@ -146,23 +150,10 @@ namespace EZ {
 		WindowSettings GetSettings() const;
 		BOOL IsShowing() const;
 		BOOL IsDestroyed() const;
-
 	private:
+		BOOL _processingMessage;
 		HWND _handle;
 		WindowSettings _settings;
+		DWORD _threadID;
 	};
-
-	// Processes one message from this program's message queue.
-	// Returns early if all windows are destroyed.
-	// Optionally waits for a message if the queue is empty.
-	// Returns FALSE if this function call did not process a message else TRUE.
-	BOOL ProcessOneMessage(BOOL wait = FALSE);
-	// Processes all messages in this program's message queue.
-	// Returns when all windows are destroyed.
-	// Returns FALSE if this function call did not process a message else TRUE.
-	BOOL ProcessUntilClear();
-	// Processes messages from this program's message queue as they appear.
-	// Returns when all windows are destroyed.
-	// Returns FALSE if this function call did not process a message else TRUE.
-	BOOL RunMessagePump();
 }

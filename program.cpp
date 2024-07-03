@@ -1,12 +1,77 @@
-#include "Renderring/EZWindow.h"
+#include "Rendering/EZWindow.h"
+#include "Rendering/EZRenderer.h"
+#include "Rendering/EZProfiler.h"
+#include "Rendering/Helper.h"
+#include <thread>
+#include <iostream>
+
+EZ::Renderer* renderer;
+EZ::Window* window;
+EZ::Profiler* profiler;
+
+LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	if (uMsg == WM_SIZE) {
+		LRESULT output = DefWindowProc(hwnd, uMsg, wParam, lParam);
+		renderer->RequestSize(static_cast<UINT32>(LOWORD(lParam)), static_cast<UINT32>(HIWORD(lParam)));
+		return output;
+	}
+	else {
+		return DefWindowProc(hwnd, uMsg, wParam, lParam);
+	}
+}
 
 int main() {
-	EZ::ClassSettings classSettings = { };
-	EZ::RegisterClass(classSettings);
-	EZ::WindowSettings windowSettings = { };
-	EZ::Window* window = new EZ::Window(windowSettings);
-	EZ::RunMessagePump();
-	delete window;
+	try {
+		profiler = new EZ::Profiler(1000);
+
+		std::thread windowThread([]() {
+			EZ::ClassSettings classSettings = { };
+			classSettings.WndProc = CustomWndProc;
+			EZ::RegisterClass(classSettings);
+
+			EZ::WindowSettings windowSettings = { };
+			windowSettings.LaunchHidden = TRUE;
+			window = new EZ::Window(windowSettings);
+
+			// Wait for renderer creation.
+			while (renderer == nullptr) {}
+
+			window->Show();
+
+			window->Run();
+
+			delete window;
+			});
+
+		// Wait for window creation. 
+		while (window == nullptr) { }
+
+		EZ::RendererSettings rendererSettings = { };
+		renderer = new EZ::Renderer(window->GetHandle(), rendererSettings);
+
+		LARGE_INTEGER lastFrame = { };
+		while (true) {
+			renderer->BeginDraw();
+			renderer->Clear(D2D1::ColorF(1, 0.75, 0.75, 1.0));
+			renderer->EndDraw();
+
+			profiler->Tick();
+		}
+
+		delete renderer;
+		delete profiler;
+
+		// If somehow we got here and windowThread is still finishing closing then wait for it to close.
+		windowThread.join();
+	}
+	catch (Error* error) {
+		error->Print();
+		delete error;
+	}
+	catch (...) {
+		PrintError(L"Something unknown went wrong. This is a good time to sob!");
+	}
+
 	return 0;
 }
 

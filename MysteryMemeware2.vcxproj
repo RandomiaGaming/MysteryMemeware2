@@ -128,14 +128,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="program.cpp" />
-    <ClCompile Include="Renderring\EZRenderer.cpp" />
-    <ClCompile Include="Renderring\EZWindow.cpp" />
-    <ClCompile Include="Renderring\Helper.cpp" />
+    <ClCompile Include="Rendering\EZProfiler.cpp" />
+    <ClCompile Include="Rendering\EZRenderer.cpp" />
+    <ClCompile Include="Rendering\EZWindow.cpp" />
+    <ClCompile Include="Rendering\Helper.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Renderring\EZRenderer.h" />
-    <ClInclude Include="Renderring\Helper.h" />
-    <ClInclude Include="Renderring\EZWindow.h" />
+    <ClInclude Include="Rendering\EZProfiler.h" />
+    <ClInclude Include="Rendering\EZRenderer.h" />
+    <ClInclude Include="Rendering\Helper.h" />
+    <ClInclude Include="Rendering\EZWindow.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

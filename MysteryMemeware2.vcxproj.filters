@@ -15,27 +15,33 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Renderring\EZWindow.cpp">
+    <ClCompile Include="Rendering\EZWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="program.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Renderring\Helper.cpp">
+    <ClCompile Include="Rendering\Helper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Renderring\EZRenderer.cpp">
+    <ClCompile Include="Rendering\EZRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\EZProfiler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Renderring\EZWindow.h">
+    <ClInclude Include="Rendering\EZWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderring\Helper.h">
+    <ClInclude Include="Rendering\Helper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderring\EZRenderer.h">
+    <ClInclude Include="Rendering\EZRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\EZProfiler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

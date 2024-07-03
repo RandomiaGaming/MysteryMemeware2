@@ -1,6 +1,5 @@
 #include "EZWindow.h"
 #include "Helper.h"
-#include <exception>
 
 void EZ::RegisterClass(EZ::ClassSettings settings) {
 	WNDCLASS wc = { };
@@ -27,7 +26,7 @@ void EZ::RegisterClass(EZ::ClassSettings settings) {
 	if (!settings.CustomBackPaint) {
 		wc.hbrBackground = CreateSolidBrush(RGB(settings.BackColorR, settings.BackColorG, settings.BackColorB));
 		if (wc.hbrBackground == NULL) {
-			PrintLastError(); return;
+			ThrowSysError();
 		}
 	}
 	else {
@@ -49,20 +48,25 @@ void EZ::RegisterClass(EZ::ClassSettings settings) {
 	if (settings.SaveClippedGraphics) {
 		wc.style |= CS_SAVEBITS;
 	}
+	if (!settings.ThisThreadOnly) {
+		wc.style |= CS_GLOBALCLASS;
+	}
 
 	wc.cbClsExtra = 0; // Allocate 0 extra bytes after the class declaration.
 	wc.cbWndExtra = 0; // Allocate 0 extra bytes after windows of this class.
-	wc.hInstance = GetModuleHandle(NULL); // The use the current hInstance.
+	wc.hInstance = GetModuleHandle(NULL); // WndProc is in the current hInstance.
 	wc.lpszMenuName = NULL; // Windows of this class have no default menu.
 
 	if (::RegisterClass(&wc) == 0) {
-		PrintLastError(); return;
+		ThrowSysError();
 	}
 }
 
 
 
 EZ::Window::Window(EZ::WindowSettings settings) {
+	_processingMessage = FALSE;
+	_threadID = GetCurrentThreadId();
 	_settings = settings;
 
 	if (_settings.Title == NULL) {
@@ -127,81 +131,142 @@ EZ::Window::Window(EZ::WindowSettings settings) {
 		GetModuleHandle(NULL), // Current process instance.
 		NULL // No additional data.
 	);
-	if (_handle == 0) {
-		PrintLastError(); return;
+	if (_handle == INVALID_HANDLE_VALUE) {
+		ThrowSysError();
 	}
 
 	// The user data of an EZ Window is always a pointer to that EZ Window.
-	SetWindowLongPtr(_handle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+	SetLastError(0);
+	if (SetWindowLongPtr(_handle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) == 0 && GetLastError() != 0) {
+		ThrowSysError();
+	}
 }
 void EZ::Window::Show(int showCommand) {
-	if (IsDestroyed() || IsShowing()) {
-		throw std::exception("Window must not be destroyed or already showing to show window.");
+	if (GetCurrentThreadId() != _threadID) {
+		throw new Error(L"Cross thread GUI access is not allowed.");
 	}
-	if (showCommand < 0) {
-		showCommand = SW_SHOWDEFAULT;
+	if (IsDestroyed() || IsShowing()) {
+		throw new Error(L"Window must not be destroyed or already showing to show window.");
+	}
+	if (_processingMessage) {
+		throw new Error(L"Window cannot be shown from inside WndProc.");
 	}
 	ShowWindow(_handle, showCommand);
-}
-BOOL EZ::Window::ProcessOneMessage(BOOL wait) {
-	if (!IsShowing()) {
-		throw std::exception("Window must be showing to processing messages.");
+	if (GetLastError() != 0) {
+		ThrowSysError();
 	}
-
+}
+BOOL EZ::Window::ProcessOne(BOOL wait) {
+	if (GetCurrentThreadId() != _threadID) {
+		throw new Error(L"Cross thread GUI access is not allowed.");
+	}
+	if (!IsShowing()) {
+		throw new Error(L"Window must be showing to processing messages.");
+	}
+	if (_processingMessage) {
+		throw new Error(L"WndProc cannot be called from inside WndProc.");
+	}
+	_processingMessage = TRUE;
+	BOOL output = FALSE;
 	MSG msg = { };
 	if (wait)
 	{
 		if (GetMessage(&msg, _handle, 0, 0)) {
 			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-			return TRUE;
+			try {
+				DispatchMessage(&msg);
+			}
+			catch (...) {
+				_processingMessage = FALSE;
+				throw;
+			}
+			output = TRUE;
 		}
 	}
 	else
 	{
 		if (PeekMessage(&msg, _handle, 0, 0, PM_REMOVE)) {
 			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-			return TRUE;
+			try {
+				DispatchMessage(&msg);
+			}
+			catch (...) {
+				_processingMessage = FALSE;
+				throw;
+			}
+			output = TRUE;
 		}
 	}
-	return FALSE;
+	_processingMessage = FALSE;
+	return output;
 }
-BOOL EZ::Window::ProcessUntilClear() {
-	if (!IsShowing()) {
-		throw std::exception("Window must be showing to processing messages.");
+BOOL EZ::Window::ProcessAll() {
+	if (GetCurrentThreadId() != _threadID) {
+		throw new Error(L"Cross thread GUI access is not allowed.");
 	}
+	if (!IsShowing()) {
+		throw new Error(L"Window must be showing to processing messages.");
+	}
+	if (_processingMessage) {
+		throw new Error(L"WndProc cannot be called from inside WndProc.");
+	}
+	_processingMessage = TRUE;
 
 	BOOL output = FALSE;
 	MSG msg = { };
 	while (!IsDestroyed() && PeekMessage(&msg, _handle, 0, 0, PM_REMOVE)) {
 		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+		try {
+			DispatchMessage(&msg);
+		}
+		catch (...) {
+			_processingMessage = FALSE;
+			throw;
+		}
 		output = TRUE;
 	}
 
+	_processingMessage = FALSE;
 	return output;
 }
-BOOL EZ::Window::RunMessagePump() {
-	if (!IsShowing()) {
-		throw std::exception("Window must be showing to processing messages.");
+BOOL EZ::Window::Run() {
+	if (GetCurrentThreadId() != _threadID) {
+		throw new Error(L"Cross thread GUI access is not allowed.");
 	}
+	if (!IsShowing()) {
+		throw new Error(L"Window must be showing to processing messages.");
+	}
+	if (_processingMessage) {
+		throw new Error(L"WndProc cannot be called from inside WndProc.");
+	}
+	_processingMessage = TRUE;
 
 	BOOL output = FALSE;
 	MSG msg = { };
 	while (!IsDestroyed() && GetMessage(&msg, _handle, 0, 0)) {
 		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+		try {
+			DispatchMessage(&msg);
+		}
+		catch (...) {
+			_processingMessage = FALSE;
+			throw;
+		}
 		output = TRUE;
 	}
 
+	_processingMessage = FALSE;
 	return output;
 }
 EZ::Window::~Window() {
+	if (GetCurrentThreadId() != _threadID) {
+		throw new Error(L"Cross thread GUI access is not allowed.");
+	}
 	if (!IsDestroyed()) {
 		DestroyWindow(_handle);
 	}
 }
+
 HWND EZ::Window::GetHandle() const {
 	return _handle;
 }
@@ -218,51 +283,4 @@ BOOL EZ::Window::IsShowing() const {
 }
 BOOL EZ::Window::IsDestroyed() const {
 	return !IsWindow(_handle);
-}
-
-
-
-BOOL EZ::ProcessOneMessage(BOOL wait) {
-	MSG msg = { };
-	if (wait)
-	{
-		if (GetMessage(&msg, NULL, 0, 0)) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-			return TRUE;
-		}
-	}
-	else
-	{
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-BOOL EZ::ProcessUntilClear() {
-	BOOL output = FALSE;
-
-	MSG msg = { };
-	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-		output = TRUE;
-	}
-
-	return output;
-}
-BOOL EZ::RunMessagePump() {
-	BOOL output = FALSE;
-
-	MSG msg = { };
-	while (GetMessage(&msg, NULL, 0, 0)) {
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-		output = TRUE;
-	}
-
-	return output;
 }
