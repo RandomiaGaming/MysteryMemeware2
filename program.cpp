@@ -11,13 +11,9 @@ EZ::Profiler* profiler;
 
 LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	if (uMsg == WM_SIZE) {
-		LRESULT output = DefWindowProc(hwnd, uMsg, wParam, lParam);
-		renderer->RequestSize(static_cast<UINT32>(LOWORD(lParam)), static_cast<UINT32>(HIWORD(lParam)));
-		return output;
+		//renderer->RequestSize(static_cast<UINT32>(LOWORD(lParam)), static_cast<UINT32>(HIWORD(lParam)));
 	}
-	else {
-		return DefWindowProc(hwnd, uMsg, wParam, lParam);
-	}
+	return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
 int main() {
@@ -42,6 +38,7 @@ int main() {
 
 			delete window;
 			});
+		windowThread.detach();
 
 		// Wait for window creation. 
 		while (window == nullptr) { }
@@ -52,7 +49,8 @@ int main() {
 		LARGE_INTEGER lastFrame = { };
 		while (true) {
 			renderer->BeginDraw();
-			renderer->Clear(D2D1::ColorF(1, 0.75, 0.75, 1.0));
+			renderer->Clear(D2D1::ColorF(1.0, 0.75, 0.75, 1.0));
+			renderer->FillRect(D2D1::RectF(0.0, 0.0, 128.0, 72.0), D2D1::ColorF(1.0, 1.0, 1.0, 1.0));
 			renderer->EndDraw();
 
 			profiler->Tick();
@@ -66,7 +64,6 @@ int main() {
 	}
 	catch (Error* error) {
 		error->Print();
-		delete error;
 	}
 	catch (...) {
 		PrintError(L"Something unknown went wrong. This is a good time to sob!");

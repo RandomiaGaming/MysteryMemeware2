@@ -57,6 +57,7 @@ namespace EZ {
 		Renderer(HWND windowHandle, RendererSettings settings);
 		void BeginDraw();
 		void Clear(D2D1_COLOR_F color);
+		void FillRect(D2D1_RECT_F rect, D2D1_COLOR_F color);
 		void RequestSize(UINT32 newWidth, UINT32 newHeight);
 		void EndDraw();
 		~Renderer();

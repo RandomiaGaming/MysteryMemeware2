@@ -27,6 +27,11 @@ void PrintError(LPCWSTR errorMessage);
 void PrintError(LPCSTR errorMessage);
 void PrintWarning(LPCWSTR warningMessage);
 void PrintWarning(LPCSTR warningMessage);
+void Print(LPCWSTR message);
+void Print(LPCSTR message);
+void PrintLine(LPCWSTR message);
+void PrintLine(LPCSTR message);
+void PrintLine();
 
 void PressAnyKey();
 void ThrowSysError();

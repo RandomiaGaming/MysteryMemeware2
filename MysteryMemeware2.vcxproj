@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -129,15 +129,19 @@
   <ItemGroup>
     <ClCompile Include="program.cpp" />
     <ClCompile Include="Rendering\EZProfiler.cpp" />
+    <ClCompile Include="Rendering\EZProgram.cpp" />
     <ClCompile Include="Rendering\EZRenderer.cpp" />
     <ClCompile Include="Rendering\EZWindow.cpp" />
     <ClCompile Include="Rendering\Helper.cpp" />
+    <ClCompile Include="Tokens.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Rendering\EZProfiler.h" />
+    <ClInclude Include="Rendering\EZProgram.h" />
     <ClInclude Include="Rendering\EZRenderer.h" />
     <ClInclude Include="Rendering\Helper.h" />
     <ClInclude Include="Rendering\EZWindow.h" />
+    <ClInclude Include="Tokens.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

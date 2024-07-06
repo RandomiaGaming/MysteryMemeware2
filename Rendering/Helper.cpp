@@ -56,6 +56,10 @@ Error::~Error() {
 		default: break;
 		}
 	}
+	_wideMessage = FALSE;
+	_constMessage = FALSE;
+	_disposal = ErrorDisposal::Delete;
+	_message = nullptr;
 }
 
 void PrintError(LPCWSTR errorMessage) {
@@ -137,6 +141,29 @@ void PrintWarning(LPCSTR warningMessage) {
 
 	// Restore initial console attributes.
 	SetConsoleTextAttribute(ErrorHandle, savedAttributes);
+}
+void Print(LPCWSTR message) {
+	// Print message.
+	DWORD written;
+	WriteConsole(ErrorHandle, message, lstrlen(message), &written, NULL);
+}
+void Print(LPCSTR message) {
+	// Print message.
+	DWORD written;
+	WriteConsole(ErrorHandle, message, strlen(message), &written, NULL);
+}
+void PrintLine(LPCWSTR message) {
+	Print(message);
+	PrintLine();
+}
+void PrintLine(LPCSTR message) {
+	Print(message);
+	PrintLine();
+}
+void PrintLine() {
+	// Print new line.
+	DWORD written;
+	WriteConsole(ErrorHandle, L"\r\n", 2, &written, NULL);
 }
 
 void PressAnyKey() {

@@ -77,6 +77,15 @@ void EZ::Renderer::BeginDraw() {
 void EZ::Renderer::Clear(D2D1_COLOR_F color) {
 	_windowRenderTarget->Clear(color);
 }
+void EZ::Renderer::FillRect(D2D1_RECT_F rect, D2D1_COLOR_F color) {
+	ID2D1SolidColorBrush* brush;
+	_windowRenderTarget->CreateSolidColorBrush(
+		color,
+		&brush
+	);
+	_windowRenderTarget->FillRectangle(&rect, brush);
+	brush->Release();
+}
 void EZ::Renderer::RequestSize(UINT32 newWidth, UINT32 newHeight) {
 	_resizeRequestWidth = newWidth;
 	_resizeRequestHeight = newHeight;
