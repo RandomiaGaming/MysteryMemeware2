@@ -15,45 +15,54 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Rendering\EZWindow.cpp">
+    <ClCompile Include="Code\EZWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="program.cpp">
+    <ClCompile Include="Code\program.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Rendering\Helper.cpp">
+    <ClCompile Include="Code\Helper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Rendering\EZRenderer.cpp">
+    <ClCompile Include="Code\EZRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Rendering\EZProfiler.cpp">
+    <ClCompile Include="Code\EZProfiler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Rendering\EZProgram.cpp">
+    <ClCompile Include="Code\EZProgram.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Tokens.cpp">
+    <ClCompile Include="Code\SysControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\TokenInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\InputControl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Rendering\EZWindow.h">
+    <ClInclude Include="Code\EZWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Rendering\Helper.h">
+    <ClInclude Include="Code\Helper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Rendering\EZRenderer.h">
+    <ClInclude Include="Code\EZRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Rendering\EZProfiler.h">
+    <ClInclude Include="Code\EZProfiler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Rendering\EZProgram.h">
+    <ClInclude Include="Code\EZProgram.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Tokens.h">
+    <ClInclude Include="Code\SysControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\TokenInfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

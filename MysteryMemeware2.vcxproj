@@ -127,21 +127,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="program.cpp" />
-    <ClCompile Include="Rendering\EZProfiler.cpp" />
-    <ClCompile Include="Rendering\EZProgram.cpp" />
-    <ClCompile Include="Rendering\EZRenderer.cpp" />
-    <ClCompile Include="Rendering\EZWindow.cpp" />
-    <ClCompile Include="Rendering\Helper.cpp" />
-    <ClCompile Include="Tokens.cpp" />
+    <ClCompile Include="Code\InputControl.cpp" />
+    <ClCompile Include="Code\program.cpp" />
+    <ClCompile Include="Code\EZProfiler.cpp" />
+    <ClCompile Include="Code\EZProgram.cpp" />
+    <ClCompile Include="Code\EZRenderer.cpp" />
+    <ClCompile Include="Code\EZWindow.cpp" />
+    <ClCompile Include="Code\Helper.cpp" />
+    <ClCompile Include="Code\TokenInfo.cpp" />
+    <ClCompile Include="Code\SysControl.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Rendering\EZProfiler.h" />
-    <ClInclude Include="Rendering\EZProgram.h" />
-    <ClInclude Include="Rendering\EZRenderer.h" />
-    <ClInclude Include="Rendering\Helper.h" />
-    <ClInclude Include="Rendering\EZWindow.h" />
-    <ClInclude Include="Tokens.h" />
+    <ClInclude Include="Code\EZProfiler.h" />
+    <ClInclude Include="Code\EZProgram.h" />
+    <ClInclude Include="Code\EZRenderer.h" />
+    <ClInclude Include="Code\Helper.h" />
+    <ClInclude Include="Code\EZWindow.h" />
+    <ClInclude Include="Code\TokenInfo.h" />
+    <ClInclude Include="Code\SysControl.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
