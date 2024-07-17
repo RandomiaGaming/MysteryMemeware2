@@ -3,7 +3,7 @@
 
 class Error {
 public:
-	enum ErrorDisposal {
+	enum class ErrorDisposal {
 		Delete = 0, // Error message buffer is freed with C++ style delete[].
 		Free = 1, // Error message buffer is freed with C-Style free(void* _Block) function.
 		LocalFree = 3, // Message buffer is freed with Win32 API LocalFree(HLOCAL hMem) from WinBase.h.
@@ -23,7 +23,7 @@ private:
 	void* _message = NULL;
 };
 
-enum ConsoleColor : WORD {
+enum class ConsoleColor : WORD {
 	Black = 0,
 	DarkRed = FOREGROUND_RED,
 	DarkGreen = FOREGROUND_GREEN,
@@ -52,3 +52,4 @@ void PrintInternal(HANDLE consoleHandle, const void* message, DWORD messageLengt
 
 void PressAnyKey();
 void ThrowSysError();
+void ThrowSysError(HRESULT hResult);

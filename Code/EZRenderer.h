@@ -5,15 +5,23 @@
 #pragma comment(lib, "D2D1.lib")
 
 namespace EZ {
-	// This method assists users in creating instances of the D2D1_RECT_L structure.
-	// Unlike the D2D1::RectL() function in D2D1_1Helper.h this method does not ask for
-	// left, top, right, and bottom but instead asks for x, y, width, and height.
-	// I find this to be easier for my brain to process when hard coding rects.
-	// Under the hood D2D1::RectL() is still used.
-	D2D1_RECT_L Rect(INT32 x, INT32 y, INT32 width, INT32 height);
+	struct BitmapAsset {
+		UINT32 Width;
+		UINT32 Height;
+		UINT32 Stride;
+		DXGI_FORMAT PixelFormat;
+		D2D1_ALPHA_MODE AlphaMode;
+		FLOAT DpiX;
+		FLOAT DpiY;
+		const BYTE* Buffer;
+	};
+	// These methods allow users to create rects with x, y, width, and height instead of left, top, right, and bottom.
+	D2D1_RECT_F RectF(FLOAT x, FLOAT y, FLOAT width, FLOAT height);
+	D2D1_RECT_L RectL(INT32 x, INT32 y, INT32 width, INT32 height);
+	D2D1_RECT_U RectU(UINT32 x, UINT32 y, UINT32 width, UINT32 height);
 	constexpr UINT32 DefaultRendererWidth = 256;
 	constexpr UINT32 DefaultRendererHeight = 144;
-	enum RendererMode : BYTE {
+	enum class RendererMode : BYTE {
 		// Allows DirectX to choose the renderer mode automatically.
 		DontCare = 0,
 		// Forces DirectX to use a software renderer.
@@ -45,7 +53,7 @@ namespace EZ {
 		BOOL RequireLatestDX;
 		// Determines weather this is a software or hardware renderer.
 		// See RendererMode enum for detailed info on each option.
-		RendererMode RenderMode = RendererMode::DontCare;
+		EZ::RendererMode RenderMode = EZ::RendererMode::DontCare;
 		// If UseVSync == TRUE then vertical sync is enabled for this renderer.
 		// This causes the renderer to wait before presenting a frame for the physical display to be ready.
 		// This artificially decreases FPS to match the monitor's refresh rate however it can help remove
@@ -57,7 +65,7 @@ namespace EZ {
 	};
 	class Renderer {
 	public:
-		Renderer(HWND windowHandle, RendererSettings settings);
+		Renderer(HWND windowHandle, EZ::RendererSettings settings);
 		void BeginDraw();
 		void Clear(D2D1_COLOR_F color);
 		void FillRect(D2D1_RECT_L rect, D2D1_COLOR_F color);
@@ -66,17 +74,19 @@ namespace EZ {
 		void DrawBitmap(ID2D1Bitmap* bitmap, D2D1_RECT_L destination);
 		void DrawBitmap(ID2D1Bitmap* bitmap, D2D1_RECT_L source, D2D1_RECT_L destination);
 		ID2D1Bitmap* LoadBitmap(LPCWSTR filePath);
+		ID2D1Bitmap* LoadBitmap(IStream* stream);
+		ID2D1Bitmap* LoadBitmap(BitmapAsset asset);
 		void EndDraw();
 		D2D1_SIZE_U GetSize();
 		~Renderer();
 
 		HWND GetWindowHandle() const;
-		RendererSettings GetSettings() const;
+		EZ::RendererSettings GetSettings() const;
 
 	private:
 		HWND _windowHandle;
 		ID2D1Factory* _factory;
 		ID2D1HwndRenderTarget* _windowRenderTarget;
-		RendererSettings _settings;
+		EZ::RendererSettings _settings;
 	};
 }

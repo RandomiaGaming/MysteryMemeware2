@@ -88,16 +88,16 @@ EZ::Window::Window(EZ::WindowSettings settings) {
 		_settings.InitialHeight = GetSystemMetrics(SM_CYSCREEN) / 2;
 	}
 	switch (_settings.StylePreset) {
-	case Normal:
+	case EZ::WindowStylePreset::Normal:
 		_settings.Styles |= WS_OVERLAPPEDWINDOW;
 		break;
-	case Popup:
+	case EZ::WindowStylePreset::Popup:
 		_settings.Styles |= WS_POPUPWINDOW;
 		break;
-	case Boarderless:
+	case EZ::WindowStylePreset::Boarderless:
 		_settings.Styles |= WS_POPUP;
 		break;
-	case DontTouchMyStyles:
+	case EZ::WindowStylePreset::DontTouchMyStyles:
 	default:
 		break;
 	}
@@ -132,12 +132,6 @@ EZ::Window::Window(EZ::WindowSettings settings) {
 		NULL // No additional data.
 	);
 	if (_handle == INVALID_HANDLE_VALUE) {
-		ThrowSysError();
-	}
-
-	// The user data of an EZ Window is always a pointer to that EZ Window.
-	SetLastError(0);
-	if (SetWindowLongPtr(_handle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)) == 0 && GetLastError() != 0) {
 		ThrowSysError();
 	}
 }
@@ -270,16 +264,11 @@ EZ::Window::~Window() {
 HWND EZ::Window::GetHandle() const {
 	return _handle;
 }
-RECT EZ::Window::GetBounds() const {
-	RECT output;
-	GetWindowRect(_handle, &output);
-	return output;
-}
 EZ::WindowSettings EZ::Window::GetSettings() const {
 	return _settings;
 }
 BOOL EZ::Window::IsShowing() const {
-	return IsWindow(_handle) && IsWindowVisible(_handle);
+	return !IsDestroyed() && IsWindowVisible(_handle);
 }
 BOOL EZ::Window::IsDestroyed() const {
 	return !IsWindow(_handle);

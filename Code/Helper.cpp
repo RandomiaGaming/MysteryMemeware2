@@ -90,7 +90,7 @@ void PrintInternal(HANDLE consoleHandle, const void* message, DWORD messageLengt
 	WORD originalColor = consoleInfo.wAttributes;
 
 	// Set console color.
-	SetConsoleTextAttribute(consoleHandle, color);
+	SetConsoleTextAttribute(consoleHandle, static_cast<WORD>(color));
 
 	// Print warning message.
 	DWORD charsWritten;
@@ -127,7 +127,6 @@ void ThrowSysError() {
 	DWORD errorCode = GetLastError();
 
 	if (errorCode == 0) {
-		PrintWarning(L"PrintLastError called even though nothing went wrong.");
 		return;
 	}
 
@@ -135,6 +134,18 @@ void ThrowSysError() {
 	DWORD size = FormatMessage(
 		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&errorMessage, 0, NULL);
+
+	throw Error(errorMessage, Error::ErrorDisposal::LocalFree);
+}
+void ThrowSysError(HRESULT hResult) {
+	if (SUCCEEDED(hResult)) {
+		return;
+	}
+
+	WCHAR* errorMessage = nullptr;
+	DWORD size = FormatMessage(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL, hResult, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&errorMessage, 0, NULL);
 
 	throw Error(errorMessage, Error::ErrorDisposal::LocalFree);
 }

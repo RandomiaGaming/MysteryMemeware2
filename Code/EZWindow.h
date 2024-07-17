@@ -60,7 +60,7 @@ namespace EZ {
 	void RegisterClass(EZ::ClassSettings settings);
 
 	constexpr LPCWSTR DefaultWindowTitle = L"Unnamed EZWindow";
-	enum WindowStylePreset : BYTE {
+	enum class WindowStylePreset : BYTE {
 		// Creates a normal window. Like Notepad.
 		// Adds the WS_OVERLAPPEDWINDOW style group to your window which contains the following styles:
 		// WS_OVERLAPPED, WS_CAPTION, WS_SYSMENU, WS_THICKFRAME, WS_MINIMIZEBOX, and WS_MAXIMIZEBOX.
@@ -106,7 +106,7 @@ namespace EZ {
 		DWORD ExtendedStyles;
 		// Defines which window style preset to use for this window.
 		// See WindowStylePreset enum for detailed info on each option.
-		WindowStylePreset StylePreset = WindowStylePreset::Normal;
+		EZ::WindowStylePreset StylePreset = EZ::WindowStylePreset::Normal;
 		// If LaunchHidden == FALSE the WS_VISIBLE style will be added to this window.
 		// This is the same as calling Window.Show straight away but way less effort.
 		// Else nothing happens.
@@ -148,14 +148,13 @@ namespace EZ {
 		~Window();
 
 		HWND GetHandle() const;
-		RECT GetBounds() const;
-		WindowSettings GetSettings() const;
+		EZ::WindowSettings GetSettings() const;
 		BOOL IsShowing() const;
 		BOOL IsDestroyed() const;
 	private:
 		BOOL _processingMessage;
 		HWND _handle;
-		WindowSettings _settings;
+		EZ::WindowSettings _settings;
 		DWORD _threadID;
 	};
 }

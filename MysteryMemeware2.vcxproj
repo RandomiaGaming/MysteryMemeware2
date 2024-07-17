@@ -127,7 +127,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Code\InputControl.cpp" />
     <ClCompile Include="Code\program.cpp" />
     <ClCompile Include="Code\EZProfiler.cpp" />
     <ClCompile Include="Code\EZProgram.cpp" />
@@ -138,6 +137,7 @@
     <ClCompile Include="Code\SysControl.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Code\CoverImage.h" />
     <ClInclude Include="Code\EZProfiler.h" />
     <ClInclude Include="Code\EZProgram.h" />
     <ClInclude Include="Code\EZRenderer.h" />
