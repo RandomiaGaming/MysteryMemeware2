@@ -5,20 +5,6 @@
 
 #pragma comment(lib, "windowscodecs.lib")
 
-LONGLONG timerStartTime = 0;
-void TimerStart() {
-	QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&timerStartTime));
-}
-void TimerEnd() {
-	LONGLONG timeNow = 0;
-	QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&timeNow));
-
-	LONGLONG deltaTime = (timeNow - timerStartTime);
-	FLOAT deltaSeconds = deltaTime / 10000000.0f;
-
-	std::cout << "Timer was running for: " << deltaTime << " ticks or " << deltaSeconds << " seconds." << std::endl;
-}
-
 // Converts a rectangle which is in pixel space and defines a 2d rectangular area on a texture or render target
 // into a rectangle that is in dip space and represents the same area but with DPI accounted for.
 // Additionally accounts for the spacial shift in y axis between game engines and text/renderring engines.

