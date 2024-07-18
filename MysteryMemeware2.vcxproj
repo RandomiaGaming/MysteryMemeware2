@@ -104,6 +104,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -127,6 +130,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Code\EZAudioClient.cpp" />
     <ClCompile Include="Code\program.cpp" />
     <ClCompile Include="Code\EZProfiler.cpp" />
     <ClCompile Include="Code\EZProgram.cpp" />
@@ -137,12 +141,13 @@
     <ClCompile Include="Code\SysControl.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Code\CoverImage.h" />
     <ClInclude Include="Code\EZProfiler.h" />
     <ClInclude Include="Code\EZProgram.h" />
     <ClInclude Include="Code\EZRenderer.h" />
+    <ClInclude Include="Code\EZAudioClient.h" />
     <ClInclude Include="Code\Helper.h" />
     <ClInclude Include="Code\EZWindow.h" />
+    <ClInclude Include="Code\MysterySong.h" />
     <ClInclude Include="Code\TokenInfo.h" />
     <ClInclude Include="Code\SysControl.h" />
   </ItemGroup>

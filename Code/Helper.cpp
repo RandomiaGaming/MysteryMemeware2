@@ -1,5 +1,6 @@
 #include "Helper.h"
 #include <Windows.h>
+#include <comdef.h>
 
 // These handles are global to the entire process and all threads.
 // Do not call CloseHandle for these handles as they will be perminantly closed for the entire process.
@@ -124,8 +125,41 @@ void PressAnyKey() {
 	SetConsoleMode(InputHandle, originalConsoleMode);
 }
 void ThrowSysError() {
-	DWORD errorCode = GetLastError();
+	ThrowSysError(GetLastError());
+}
+void ThrowSysError(HRESULT hResult) {
+	if (SUCCEEDED(hResult)) {
+		return;
+	}
 
+	WCHAR* errorMessage = nullptr;
+	if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL, hResult, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&errorMessage, 0, NULL) > 0) {
+		throw Error(errorMessage, Error::ErrorDisposal::LocalFree);
+	}
+	else {
+		_com_error comError(hResult);
+		LPCWSTR comErrorMessage = comError.ErrorMessage();
+
+		constexpr const WCHAR* unknownError = L"Unknown error";
+		for (int i = 0; unknownError[i] != '\0'; i++)
+		{
+			if (comErrorMessage[i] != unknownError[i]) {
+				goto comErrorKnown;
+			}
+		}
+		{
+			WORD code = HRESULT_CODE(hResult);
+			throw Error(L"Unknown com error with code: " + code);
+		}
+
+	comErrorKnown:
+		errorMessage = new WCHAR[lstrlen(comErrorMessage)];
+		lstrcpy(errorMessage, comErrorMessage);
+		throw Error(errorMessage, Error::ErrorDisposal::Delete);
+	}
+}
+void ThrowSysError(DWORD errorCode) {
 	if (errorCode == 0) {
 		return;
 	}
@@ -134,18 +168,6 @@ void ThrowSysError() {
 	DWORD size = FormatMessage(
 		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&errorMessage, 0, NULL);
-
-	throw Error(errorMessage, Error::ErrorDisposal::LocalFree);
-}
-void ThrowSysError(HRESULT hResult) {
-	if (SUCCEEDED(hResult)) {
-		return;
-	}
-
-	WCHAR* errorMessage = nullptr;
-	DWORD size = FormatMessage(
-		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL, hResult, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&errorMessage, 0, NULL);
 
 	throw Error(errorMessage, Error::ErrorDisposal::LocalFree);
 }

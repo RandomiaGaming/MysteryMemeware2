@@ -9,5 +9,8 @@ x86/
 Debug/
 Release/
 packages/
+
+Code/Assets/
+
 *.user
 *.suo

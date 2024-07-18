@@ -112,24 +112,24 @@ void EZ::Renderer::DrawBitmap(ID2D1Bitmap* bitmap, D2D1_RECT_L source, D2D1_RECT
 	_windowRenderTarget->DrawBitmap(bitmap, transDestination, 1.0f, D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR, transSource);
 }
 ID2D1Bitmap* EZ::Renderer::LoadBitmap(LPCWSTR filePath) {
-	ThrowSysError(CoInitializeEx(nullptr, COINIT_SPEED_OVER_MEMORY));
+	ThrowSysError(CoInitializeEx(NULL, COINIT_SPEED_OVER_MEMORY));
 
-	IWICImagingFactory* factory = nullptr;
-	ThrowSysError(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory)));
+	IWICImagingFactory* factory = NULL;
+	ThrowSysError(CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory)));
 
-	IWICBitmapDecoder* decoder = nullptr;
-	ThrowSysError(factory->CreateDecoderFromFilename(filePath, nullptr, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &decoder));
+	IWICBitmapDecoder* decoder = NULL;
+	ThrowSysError(factory->CreateDecoderFromFilename(filePath, NULL, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &decoder));
 
-	IWICBitmapFrameDecode* frame = nullptr;
+	IWICBitmapFrameDecode* frame = NULL;
 	ThrowSysError(decoder->GetFrame(0, &frame));
 
-	IWICFormatConverter* converter = nullptr;
+	IWICFormatConverter* converter = NULL;
 	ThrowSysError(factory->CreateFormatConverter(&converter));
 
-	ThrowSysError(converter->Initialize(frame, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0.0f, WICBitmapPaletteTypeCustom));
+	ThrowSysError(converter->Initialize(frame, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, NULL, 0.0f, WICBitmapPaletteTypeCustom));
 
-	ID2D1Bitmap* output = nullptr;
-	ThrowSysError(_windowRenderTarget->CreateBitmapFromWicBitmap(converter, nullptr, &output));
+	ID2D1Bitmap* output = NULL;
+	ThrowSysError(_windowRenderTarget->CreateBitmapFromWicBitmap(converter, NULL, &output));
 
 	converter->Release();
 	frame->Release();
@@ -140,24 +140,24 @@ ID2D1Bitmap* EZ::Renderer::LoadBitmap(LPCWSTR filePath) {
 	return output;
 }
 ID2D1Bitmap* EZ::Renderer::LoadBitmap(IStream* stream) {
-	ThrowSysError(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
+	ThrowSysError(CoInitializeEx(NULL, COINIT_MULTITHREADED));
 
-	IWICImagingFactory* factory = nullptr;
-	ThrowSysError(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory)));
+	IWICImagingFactory* factory = NULL;
+	ThrowSysError(CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory)));
 
-	IWICBitmapDecoder* decoder = nullptr;
-	ThrowSysError(factory->CreateDecoderFromStream(stream, nullptr, WICDecodeMetadataCacheOnLoad, &decoder));
+	IWICBitmapDecoder* decoder = NULL;
+	ThrowSysError(factory->CreateDecoderFromStream(stream, NULL, WICDecodeMetadataCacheOnLoad, &decoder));
 
-	IWICBitmapFrameDecode* frame = nullptr;
+	IWICBitmapFrameDecode* frame = NULL;
 	ThrowSysError(decoder->GetFrame(0, &frame));
 
-	IWICFormatConverter* converter = nullptr;
+	IWICFormatConverter* converter = NULL;
 	ThrowSysError(factory->CreateFormatConverter(&converter));
 
-	ThrowSysError(converter->Initialize(frame, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0.0f, WICBitmapPaletteTypeCustom));
+	ThrowSysError(converter->Initialize(frame, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, NULL, 0.0f, WICBitmapPaletteTypeCustom));
 
-	ID2D1Bitmap* output = nullptr;
-	ThrowSysError(_windowRenderTarget->CreateBitmapFromWicBitmap(converter, nullptr, &output));
+	ID2D1Bitmap* output = NULL;
+	ThrowSysError(_windowRenderTarget->CreateBitmapFromWicBitmap(converter, NULL, &output));
 
 	converter->Release();
 	frame->Release();

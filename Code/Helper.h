@@ -53,3 +53,4 @@ void PrintInternal(HANDLE consoleHandle, const void* message, DWORD messageLengt
 void PressAnyKey();
 void ThrowSysError();
 void ThrowSysError(HRESULT hResult);
+void ThrowSysError(DWORD errorCode);
