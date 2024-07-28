@@ -171,17 +171,10 @@ ID2D1Bitmap* EZ::Renderer::LoadBitmap(EZ::BitmapAsset asset) {
 	ID2D1Bitmap* output;
 	D2D1_SIZE_U bitmapSize = D2D1::SizeU(asset.Width, asset.Height);
 	D2D1_BITMAP_PROPERTIES bitmapProperties = {};
-	if (asset.DpiX == 0 && asset.DpiY == 0) {
-		_windowRenderTarget->GetDpi(&bitmapProperties.dpiX, &bitmapProperties.dpiY);
-	}
-	else {
-		bitmapProperties.dpiX = asset.DpiX;
-		bitmapProperties.dpiY = asset.DpiY;
-	}
-	bitmapProperties.pixelFormat = {};
-	bitmapProperties.pixelFormat.format = asset.PixelFormat;
-	bitmapProperties.pixelFormat.alphaMode = asset.AlphaMode;
-	ThrowSysError(_windowRenderTarget->CreateBitmap(bitmapSize, asset.Buffer, asset.Stride, &bitmapProperties, &output));
+	_windowRenderTarget->GetDpi(&bitmapProperties.dpiX, &bitmapProperties.dpiY);
+	bitmapProperties.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	bitmapProperties.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
+	ThrowSysError(_windowRenderTarget->CreateBitmap(bitmapSize, asset.Buffer, asset.Width * 4, &bitmapProperties, &output));
 	return output;
 }
 void EZ::Renderer::EndDraw() {

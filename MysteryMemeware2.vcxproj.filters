@@ -68,7 +68,7 @@
     <ClInclude Include="Code\EZAudioClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Code\MysterySong.h">
+    <ClInclude Include="Code\Assets\MysterySong.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

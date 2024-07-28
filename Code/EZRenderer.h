@@ -8,11 +8,6 @@ namespace EZ {
 	struct BitmapAsset {
 		UINT32 Width;
 		UINT32 Height;
-		UINT32 Stride;
-		DXGI_FORMAT PixelFormat;
-		D2D1_ALPHA_MODE AlphaMode;
-		FLOAT DpiX;
-		FLOAT DpiY;
 		const BYTE* Buffer;
 	};
 	// These methods allow users to create rects with x, y, width, and height instead of left, top, right, and bottom.

@@ -117,10 +117,12 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <Optimization>Disabled</Optimization>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -141,13 +143,13 @@
     <ClCompile Include="Code\SysControl.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Code\Assets\MysterySong.h" />
     <ClInclude Include="Code\EZProfiler.h" />
     <ClInclude Include="Code\EZProgram.h" />
     <ClInclude Include="Code\EZRenderer.h" />
     <ClInclude Include="Code\EZAudioClient.h" />
     <ClInclude Include="Code\Helper.h" />
     <ClInclude Include="Code\EZWindow.h" />
-    <ClInclude Include="Code\MysterySong.h" />
     <ClInclude Include="Code\TokenInfo.h" />
     <ClInclude Include="Code\SysControl.h" />
   </ItemGroup>
