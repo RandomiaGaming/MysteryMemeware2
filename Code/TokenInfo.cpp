@@ -1,6 +1,6 @@
 // GOOD ENOUGH
 #include "TokenInfo.h"
-#include "Helper.h"
+#include "EZError.h"
 
 #include <sddl.h>
 #include <iostream>
@@ -9,14 +9,14 @@
 
 void* GetTokenInfo(HANDLE token, TOKEN_INFORMATION_CLASS desiredInfo) {
 	DWORD length = 0;
-	GetTokenInformation(token, desiredInfo, nullptr, 0, &length);
+	GetTokenInformation(token, desiredInfo, NULL, 0, &length);
 	if (length == 0) {
-		ThrowSysError();
+		EZ::Error::ThrowFromCode(GetLastError());
 	}
 
 	void* output = malloc(length);
 	if (!GetTokenInformation(token, desiredInfo, output, length, &length)) {
-		ThrowSysError();
+		EZ::Error::ThrowFromCode(GetLastError());
 	}
 
 	return output;
@@ -141,7 +141,7 @@ void PrintTokenUser(HANDLE token) {
 
 		free(tokenUser);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenGroups(HANDLE token) {
 	try {
@@ -157,7 +157,7 @@ void PrintTokenGroups(HANDLE token) {
 
 		free(tokenGroups);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenPrivileges(HANDLE token) {
 	try {
@@ -173,7 +173,7 @@ void PrintTokenPrivileges(HANDLE token) {
 
 		free(tokenPrivileges);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenOwner(HANDLE token) {
 	try {
@@ -183,7 +183,7 @@ void PrintTokenOwner(HANDLE token) {
 
 		free(tokenOwner);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenPrimaryGroup(HANDLE token) {
 	try {
@@ -193,7 +193,7 @@ void PrintTokenPrimaryGroup(HANDLE token) {
 
 		free(tokenPrimaryGroup);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenDefaultDacl(HANDLE token) {
 	try {
@@ -206,7 +206,7 @@ void PrintTokenDefaultDacl(HANDLE token) {
 		for (DWORD i = 0; i < tokenDefaultDacl->DefaultDacl->AceCount; i++)
 		{
 			if (i != 0) { std::wcout << std::endl; }
-			ACE_HEADER* currentACE = nullptr;
+			ACE_HEADER* currentACE = NULL;
 			GetAce(tokenDefaultDacl->DefaultDacl, i, reinterpret_cast<void**>(&currentACE));
 			std::wcout << L"    Type: " << currentACE->AceType << std::endl;
 			std::wcout << L"    Flags: " << currentACE->AceFlags << std::endl;
@@ -215,7 +215,7 @@ void PrintTokenDefaultDacl(HANDLE token) {
 
 		free(tokenDefaultDacl);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenSource(HANDLE token) {
 	try {
@@ -225,7 +225,7 @@ void PrintTokenSource(HANDLE token) {
 
 		free(tokenSource);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenType(HANDLE token) {
 	try {
@@ -245,7 +245,7 @@ void PrintTokenType(HANDLE token) {
 
 		free(tokenType);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenImpersonationLevel(HANDLE token) {
 	try {
@@ -279,7 +279,7 @@ void PrintTokenImpersonationLevel(HANDLE token) {
 
 		free(tokenImpersonationLevel);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenStatistics(HANDLE token) {
 	try {
@@ -329,7 +329,7 @@ void PrintTokenStatistics(HANDLE token) {
 
 		free(tokenStatistics);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenRestrictedSids(HANDLE token) {
 	try {
@@ -345,7 +345,7 @@ void PrintTokenRestrictedSids(HANDLE token) {
 
 		free(tokenRestrictedSids);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenSessionID(HANDLE token) {
 	try {
@@ -355,7 +355,7 @@ void PrintTokenSessionID(HANDLE token) {
 
 		free(tokenSessionId);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenGroupsAndPrivileges(HANDLE token) {
 	try {
@@ -365,7 +365,7 @@ void PrintTokenGroupsAndPrivileges(HANDLE token) {
 
 		free(tokenGroupsAndPrivileges);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenSessionReference(HANDLE token) {
 	try {
@@ -375,7 +375,7 @@ void PrintTokenSessionReference(HANDLE token) {
 
 		free(tokenSessionReference);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenSandBoxInert(HANDLE token) {
 	try {
@@ -385,7 +385,7 @@ void PrintTokenSandBoxInert(HANDLE token) {
 
 		free(tokenSandBoxInert);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenAuditPolicy(HANDLE token) {
 	try {
@@ -395,7 +395,7 @@ void PrintTokenAuditPolicy(HANDLE token) {
 
 		free(tokenAuditPolicy);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenOrigin(HANDLE token) {
 	try {
@@ -405,7 +405,7 @@ void PrintTokenOrigin(HANDLE token) {
 
 		free(tokenOrigin);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenElevationType(HANDLE token) {
 	try {
@@ -428,7 +428,7 @@ void PrintTokenElevationType(HANDLE token) {
 
 		free(tokenElevationType);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenLinkedToken(HANDLE token) {
 	try {
@@ -438,7 +438,7 @@ void PrintTokenLinkedToken(HANDLE token) {
 
 		free(tokenLinkedToken);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenElevation(HANDLE token) {
 	try {
@@ -448,7 +448,7 @@ void PrintTokenElevation(HANDLE token) {
 
 		free(tokenElevation);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenHasRestrictions(HANDLE token) {
 	try {
@@ -458,7 +458,7 @@ void PrintTokenHasRestrictions(HANDLE token) {
 
 		free(tokenHasRestrictions);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenAccessInformation(HANDLE token) {
 	try {
@@ -468,7 +468,7 @@ void PrintTokenAccessInformation(HANDLE token) {
 
 		free(tokenAccessInformation);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenVirtualizationAllowed(HANDLE token) {
 	try {
@@ -478,7 +478,7 @@ void PrintTokenVirtualizationAllowed(HANDLE token) {
 
 		free(tokenVirtualizationAllowed);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenVirtualizationEnabled(HANDLE token) {
 	try {
@@ -488,7 +488,7 @@ void PrintTokenVirtualizationEnabled(HANDLE token) {
 
 		free(tokenVirtualizationEnabled);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenIntegrityLevel(HANDLE token) {
 	try {
@@ -500,7 +500,7 @@ void PrintTokenIntegrityLevel(HANDLE token) {
 
 		free(tokenIntegrityLevel);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenUIAccess(HANDLE token) {
 	try {
@@ -510,7 +510,7 @@ void PrintTokenUIAccess(HANDLE token) {
 
 		free(tokenUIAccess);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenMandatoryPolicy(HANDLE token) {
 	try {
@@ -520,7 +520,7 @@ void PrintTokenMandatoryPolicy(HANDLE token) {
 
 		free(tokenMandatoryPolicy);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenLogonSid(HANDLE token) {
 	try {
@@ -536,7 +536,7 @@ void PrintTokenLogonSid(HANDLE token) {
 
 		free(tokenLogonSid);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenIsAppContainer(HANDLE token) {
 	try {
@@ -546,7 +546,7 @@ void PrintTokenIsAppContainer(HANDLE token) {
 
 		free(tokenIsAppContainer);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenCapabilities(HANDLE token) {
 	try {
@@ -562,7 +562,7 @@ void PrintTokenCapabilities(HANDLE token) {
 
 		free(tokenCapabilities);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenAppContainerSid(HANDLE token) {
 	try {
@@ -572,7 +572,7 @@ void PrintTokenAppContainerSid(HANDLE token) {
 
 		free(tokenAppContainerSid);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenAppContainerNumber(HANDLE token) {
 	try {
@@ -582,7 +582,7 @@ void PrintTokenAppContainerNumber(HANDLE token) {
 
 		free(tokenAppContainerNumber);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenUserClaimAttributes(HANDLE token) {
 	try {
@@ -610,7 +610,7 @@ void PrintTokenUserClaimAttributes(HANDLE token) {
 
 		free(tokenUserClaimAttributes);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenDeviceClaimAttributes(HANDLE token) {
 	try {
@@ -620,7 +620,7 @@ void PrintTokenDeviceClaimAttributes(HANDLE token) {
 
 		free(tokenDeviceClaimAttributes);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenRestrictedUserClaimAttributes(HANDLE token) {
 	try {
@@ -630,7 +630,7 @@ void PrintTokenRestrictedUserClaimAttributes(HANDLE token) {
 
 		free(tokenRestrictedUserClaimAttributes);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenRestrictedDeviceClaimAttributes(HANDLE token) {
 	try {
@@ -640,7 +640,7 @@ void PrintTokenRestrictedDeviceClaimAttributes(HANDLE token) {
 
 		free(tokenRestrictedDeviceClaimAttributes);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenDeviceGroups(HANDLE token) {
 	try {
@@ -656,7 +656,7 @@ void PrintTokenDeviceGroups(HANDLE token) {
 
 		free(tokenDeviceGroups);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenRestrictedDeviceGroups(HANDLE token) {
 	try {
@@ -684,7 +684,7 @@ void PrintTokenRestrictedDeviceGroups(HANDLE token) {
 
 		free(tokenRestrictedDeviceGroups);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenSecurityAttributes(HANDLE token) {
 	try {
@@ -694,7 +694,7 @@ void PrintTokenSecurityAttributes(HANDLE token) {
 
 		free(tokenSecurityAttributes);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenIsRestricted(HANDLE token) {
 	try {
@@ -704,7 +704,7 @@ void PrintTokenIsRestricted(HANDLE token) {
 
 		free(tokenIsRestricted);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenProcessTrustLevel(HANDLE token) {
 	try {
@@ -714,7 +714,7 @@ void PrintTokenProcessTrustLevel(HANDLE token) {
 
 		free(tokenProcessTrustLevel);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenPrivateNameSpace(HANDLE token) {
 	try {
@@ -724,7 +724,7 @@ void PrintTokenPrivateNameSpace(HANDLE token) {
 
 		free(tokenPrivateNameSpace);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenSingletonAttributes(HANDLE token) {
 	try {
@@ -734,7 +734,7 @@ void PrintTokenSingletonAttributes(HANDLE token) {
 
 		free(tokenSingletonAttributes);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenBnoIsolation(HANDLE token) {
 	try {
@@ -744,7 +744,7 @@ void PrintTokenBnoIsolation(HANDLE token) {
 
 		free(tokenBnoIsolation);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenChildProcessFlags(HANDLE token) {
 	try {
@@ -754,7 +754,7 @@ void PrintTokenChildProcessFlags(HANDLE token) {
 
 		free(tokenChildProcessFlags);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenIsLessPrivilegedAppContainer(HANDLE token) {
 	try {
@@ -764,7 +764,7 @@ void PrintTokenIsLessPrivilegedAppContainer(HANDLE token) {
 
 		free(tokenIsLessPrivilegedAppContainer);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenIsSandboxed(HANDLE token) {
 	try {
@@ -774,7 +774,7 @@ void PrintTokenIsSandboxed(HANDLE token) {
 
 		free(tokenIsSandboxed);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenIsAppSilo(HANDLE token) {
 	try {
@@ -784,7 +784,7 @@ void PrintTokenIsAppSilo(HANDLE token) {
 
 		free(tokenIsAppSilo);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 void PrintTokenLoggingInformation(HANDLE token) {
 	std::wcout << L"Token Logging Information: TODO (Not supported by SDK)" << std::endl;
@@ -796,8 +796,9 @@ void PrintTokenLoggingInformation(HANDLE token) {
 
 		free(tokenLoggingInformation);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print();  }
 	*/
+
 }
 void PrintMaxTokenInfoClass(HANDLE token) {
 	try {
@@ -807,11 +808,12 @@ void PrintMaxTokenInfoClass(HANDLE token) {
 
 		free(maxTokenInfoClass);
 	}
-	catch (Error error) { error.PrintAndFree(); return; }
+	catch (EZ::Error error) { error.Print(); }
 }
 
 void PrintTokenInfo(HANDLE token) {
 	PrintTokenHandle(token); std::wcout << std::endl;
+
 	PrintTokenUser(token); std::wcout << std::endl;
 	PrintTokenGroups(token); std::wcout << std::endl;
 	PrintTokenPrivileges(token); std::wcout << std::endl;

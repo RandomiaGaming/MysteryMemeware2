@@ -1,5 +1,5 @@
 #include "EZRenderer.h"
-#include "Helper.h"
+#include "EZError.h"
 #include <wincodec.h>
 #include <iostream>
 
@@ -29,16 +29,16 @@ D2D1_RECT_U EZ::RectU(UINT32 x, UINT32 y, UINT32 width, UINT32 height) {
 
 EZ::Renderer::Renderer(HWND windowHandle, EZ::RendererSettings settings) {
 	if (!IsWindow(windowHandle)) {
-		throw Error("windowHandle must be a valid HWND. (Window may be destroyed)");
+		throw Error("windowHandle must be a valid HWND. (Window may be destroyed)", __FILE__, __LINE__);
 	}
 	_windowHandle = windowHandle;
 	_settings = settings;
 
 	if (_settings.OptimizeForSingleThread) {
-		ThrowSysError(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &_factory));
+		EZ::Error::ThrowFromHR(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &_factory), __FILE__, __LINE__);
 	}
 	else {
-		ThrowSysError(D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED, &_factory));
+		EZ::Error::ThrowFromHR(D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED, &_factory), __FILE__, __LINE__);
 	}
 
 	D2D1_RENDER_TARGET_PROPERTIES renderTargetProperties = D2D1::RenderTargetProperties();
@@ -78,7 +78,7 @@ EZ::Renderer::Renderer(HWND windowHandle, EZ::RendererSettings settings) {
 		windowRenderTargetProperties.presentOptions |= D2D1_PRESENT_OPTIONS_IMMEDIATELY;
 	}
 
-	ThrowSysError(_factory->CreateHwndRenderTarget(renderTargetProperties, windowRenderTargetProperties, &_windowRenderTarget));
+	EZ::Error::ThrowFromHR(_factory->CreateHwndRenderTarget(renderTargetProperties, windowRenderTargetProperties, &_windowRenderTarget), __FILE__, __LINE__);
 }
 void EZ::Renderer::BeginDraw() {
 	_windowRenderTarget->BeginDraw();
@@ -88,13 +88,13 @@ void EZ::Renderer::Clear(D2D1_COLOR_F color) {
 }
 void EZ::Renderer::FillRect(D2D1_RECT_L rect, D2D1_COLOR_F color) {
 	ID2D1SolidColorBrush* brush;
-	ThrowSysError(_windowRenderTarget->CreateSolidColorBrush(color, &brush));
+	EZ::Error::ThrowFromHR(_windowRenderTarget->CreateSolidColorBrush(color, &brush), __FILE__, __LINE__);
 	D2D1_RECT_F transRect = TransformRect(rect, _windowRenderTarget->GetSize(), _windowRenderTarget->GetPixelSize());
 	_windowRenderTarget->FillRectangle(&transRect, brush);
 	brush->Release();
 }
 void EZ::Renderer::Resize(D2D1_SIZE_U newSize) {
-	ThrowSysError(_windowRenderTarget->Resize(newSize));
+	EZ::Error::ThrowFromHR(_windowRenderTarget->Resize(newSize), __FILE__, __LINE__);
 }
 void EZ::Renderer::DrawBitmap(ID2D1Bitmap* bitmap, D2D1_POINT_2L position) {
 	D2D1_SIZE_U bitmapSize = bitmap->GetPixelSize();
@@ -112,24 +112,24 @@ void EZ::Renderer::DrawBitmap(ID2D1Bitmap* bitmap, D2D1_RECT_L source, D2D1_RECT
 	_windowRenderTarget->DrawBitmap(bitmap, transDestination, 1.0f, D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR, transSource);
 }
 ID2D1Bitmap* EZ::Renderer::LoadBitmap(LPCWSTR filePath) {
-	ThrowSysError(CoInitializeEx(NULL, COINIT_SPEED_OVER_MEMORY));
+	EZ::Error::ThrowFromHR(CoInitializeEx(NULL, COINIT_SPEED_OVER_MEMORY), __FILE__, __LINE__);
 
 	IWICImagingFactory* factory = NULL;
-	ThrowSysError(CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory)));
+	EZ::Error::ThrowFromHR(CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory)), __FILE__, __LINE__);
 
 	IWICBitmapDecoder* decoder = NULL;
-	ThrowSysError(factory->CreateDecoderFromFilename(filePath, NULL, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &decoder));
+	EZ::Error::ThrowFromHR(factory->CreateDecoderFromFilename(filePath, NULL, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &decoder), __FILE__, __LINE__);
 
 	IWICBitmapFrameDecode* frame = NULL;
-	ThrowSysError(decoder->GetFrame(0, &frame));
+	EZ::Error::ThrowFromHR(decoder->GetFrame(0, &frame), __FILE__, __LINE__);
 
 	IWICFormatConverter* converter = NULL;
-	ThrowSysError(factory->CreateFormatConverter(&converter));
+	EZ::Error::ThrowFromHR(factory->CreateFormatConverter(&converter), __FILE__, __LINE__);
 
-	ThrowSysError(converter->Initialize(frame, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, NULL, 0.0f, WICBitmapPaletteTypeCustom));
+	EZ::Error::ThrowFromHR(converter->Initialize(frame, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, NULL, 0.0f, WICBitmapPaletteTypeCustom), __FILE__, __LINE__);
 
 	ID2D1Bitmap* output = NULL;
-	ThrowSysError(_windowRenderTarget->CreateBitmapFromWicBitmap(converter, NULL, &output));
+	EZ::Error::ThrowFromHR(_windowRenderTarget->CreateBitmapFromWicBitmap(converter, NULL, &output), __FILE__, __LINE__);
 
 	converter->Release();
 	frame->Release();
@@ -140,24 +140,24 @@ ID2D1Bitmap* EZ::Renderer::LoadBitmap(LPCWSTR filePath) {
 	return output;
 }
 ID2D1Bitmap* EZ::Renderer::LoadBitmap(IStream* stream) {
-	ThrowSysError(CoInitializeEx(NULL, COINIT_MULTITHREADED));
+	EZ::Error::ThrowFromHR(CoInitializeEx(NULL, COINIT_MULTITHREADED), __FILE__, __LINE__);
 
 	IWICImagingFactory* factory = NULL;
-	ThrowSysError(CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory)));
+	EZ::Error::ThrowFromHR(CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory)), __FILE__, __LINE__);
 
 	IWICBitmapDecoder* decoder = NULL;
-	ThrowSysError(factory->CreateDecoderFromStream(stream, NULL, WICDecodeMetadataCacheOnLoad, &decoder));
+	EZ::Error::ThrowFromHR(factory->CreateDecoderFromStream(stream, NULL, WICDecodeMetadataCacheOnLoad, &decoder), __FILE__, __LINE__);
 
 	IWICBitmapFrameDecode* frame = NULL;
-	ThrowSysError(decoder->GetFrame(0, &frame));
+	EZ::Error::ThrowFromHR(decoder->GetFrame(0, &frame), __FILE__, __LINE__);
 
 	IWICFormatConverter* converter = NULL;
-	ThrowSysError(factory->CreateFormatConverter(&converter));
+	EZ::Error::ThrowFromHR(factory->CreateFormatConverter(&converter), __FILE__, __LINE__);
 
-	ThrowSysError(converter->Initialize(frame, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, NULL, 0.0f, WICBitmapPaletteTypeCustom));
+	EZ::Error::ThrowFromHR(converter->Initialize(frame, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, NULL, 0.0f, WICBitmapPaletteTypeCustom), __FILE__, __LINE__);
 
 	ID2D1Bitmap* output = NULL;
-	ThrowSysError(_windowRenderTarget->CreateBitmapFromWicBitmap(converter, NULL, &output));
+	EZ::Error::ThrowFromHR(_windowRenderTarget->CreateBitmapFromWicBitmap(converter, NULL, &output), __FILE__, __LINE__);
 
 	converter->Release();
 	frame->Release();
@@ -174,11 +174,11 @@ ID2D1Bitmap* EZ::Renderer::LoadBitmap(EZ::BitmapAsset asset) {
 	_windowRenderTarget->GetDpi(&bitmapProperties.dpiX, &bitmapProperties.dpiY);
 	bitmapProperties.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
 	bitmapProperties.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
-	ThrowSysError(_windowRenderTarget->CreateBitmap(bitmapSize, asset.Buffer, asset.Width * 4, &bitmapProperties, &output));
+	EZ::Error::ThrowFromHR(_windowRenderTarget->CreateBitmap(bitmapSize, asset.Buffer, asset.Width * 4, &bitmapProperties, &output), __FILE__, __LINE__);
 	return output;
 }
 void EZ::Renderer::EndDraw() {
-	ThrowSysError(_windowRenderTarget->EndDraw());
+	EZ::Error::ThrowFromHR(_windowRenderTarget->EndDraw(), __FILE__, __LINE__);
 }
 D2D1_SIZE_U EZ::Renderer::GetSize() {
 	return _windowRenderTarget->GetPixelSize();

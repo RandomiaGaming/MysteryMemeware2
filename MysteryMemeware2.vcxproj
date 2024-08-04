@@ -107,6 +107,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -123,6 +124,7 @@
       <ConformanceMode>true</ConformanceMode>
       <Optimization>Disabled</Optimization>
       <WholeProgramOptimization>false</WholeProgramOptimization>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -132,23 +134,26 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Code\CoverImage.cpp" />
+    <ClCompile Include="Code\MysterySong.cpp" />
     <ClCompile Include="Code\EZAudioClient.cpp" />
+    <ClCompile Include="Code\EZError.cpp" />
     <ClCompile Include="Code\program.cpp" />
     <ClCompile Include="Code\EZProfiler.cpp" />
     <ClCompile Include="Code\EZProgram.cpp" />
     <ClCompile Include="Code\EZRenderer.cpp" />
     <ClCompile Include="Code\EZWindow.cpp" />
-    <ClCompile Include="Code\Helper.cpp" />
     <ClCompile Include="Code\TokenInfo.cpp" />
     <ClCompile Include="Code\SysControl.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Code\Assets\MysterySong.h" />
+    <ClInclude Include="Code\CoverImage.h" />
+    <ClInclude Include="Code\MysterySong.h" />
+    <ClInclude Include="Code\EZError.h" />
     <ClInclude Include="Code\EZProfiler.h" />
     <ClInclude Include="Code\EZProgram.h" />
     <ClInclude Include="Code\EZRenderer.h" />
     <ClInclude Include="Code\EZAudioClient.h" />
-    <ClInclude Include="Code\Helper.h" />
     <ClInclude Include="Code\EZWindow.h" />
     <ClInclude Include="Code\TokenInfo.h" />
     <ClInclude Include="Code\SysControl.h" />

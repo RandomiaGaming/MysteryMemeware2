@@ -1,20 +1,26 @@
-#include "Assets/CoverImage.h"
-#include "Assets/MysterySong.h"
+#include "CoverImage.h"
+#include "MysterySong.h"
 #include "EZAudioClient.h"
 #include "EZProgram.h"
-#include "Helper.h"
+#include "EZError.h"
 #include "SysControl.h"
+#include "TokenInfo.h"
 #include <thread>
 #include <iostream>
+#include <fstream>
 #include <vector>
 
 LONGLONG timerStartTime = 0;
 void TimerStart() {
-	QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&timerStartTime));
+	if (!QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&timerStartTime))) {
+		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	}
 }
 void TimerEnd() {
 	LONGLONG timeNow = 0;
-	QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&timeNow));
+	if (!QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&timeNow))) {
+		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	}
 
 	LONGLONG deltaTime = (timeNow - timerStartTime);
 	FLOAT deltaSeconds = deltaTime / 10000000.0f;
@@ -33,53 +39,56 @@ UINT32 OpenWindowCount = 0;
 void CoverMonitor(HMONITOR monitor) {
 	OpenWindowCount++;
 	std::thread monitorThread([monitor]() {
-		EZ::ClassSettings classSettings = { };
-		classSettings.ThisThreadOnly = TRUE;
-		classSettings.NoCloseOption = TRUE;
+		try {
+			EZ::ClassSettings classSettings = { };
+			classSettings.ThisThreadOnly = TRUE;
+			classSettings.NoCloseOption = TRUE;
 
-		MONITORINFO monitorInfo;
-		monitorInfo.cbSize = sizeof(MONITORINFO);
-		GetMonitorInfo(monitor, &monitorInfo);
+			MONITORINFO monitorInfo;
+			monitorInfo.cbSize = sizeof(MONITORINFO);
+			GetMonitorInfo(monitor, &monitorInfo);
 
-		EZ::WindowSettings windowSettings = { };
-		windowSettings.HideInTaskbar = TRUE;
-		windowSettings.Title = L"Mystery Experience Host Window";
-		windowSettings.LaunchHidden = TRUE;
-		windowSettings.TopMost = TRUE;
-		windowSettings.StylePreset = EZ::WindowStylePreset::Boarderless;
-		windowSettings.InitialX = monitorInfo.rcMonitor.left;
-		windowSettings.InitialY = monitorInfo.rcMonitor.top;
-		windowSettings.InitialWidth = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
-		windowSettings.InitialHeight = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
+			EZ::WindowSettings windowSettings = { };
+			windowSettings.HideInTaskbar = TRUE;
+			windowSettings.Title = L"Mystery Experience Host Window";
+			windowSettings.LaunchHidden = TRUE;
+			windowSettings.TopMost = TRUE;
+			windowSettings.StylePreset = EZ::WindowStylePreset::Boarderless;
+			windowSettings.InitialX = monitorInfo.rcMonitor.left;
+			windowSettings.InitialY = monitorInfo.rcMonitor.top;
+			windowSettings.InitialWidth = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+			windowSettings.InitialHeight = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
 
-		EZ::RendererSettings rendererSettings = { };
-		rendererSettings.UseVSync = TRUE;
-		rendererSettings.OptimizeForSingleThread = TRUE;
+			EZ::RendererSettings rendererSettings = { };
+			rendererSettings.UseVSync = TRUE;
+			rendererSettings.OptimizeForSingleThread = TRUE;
 
-		ID2D1Bitmap* mysteryImage = nullptr;
+			ID2D1Bitmap* mysteryImage = NULL;
 
-		EZ::ProgramSettings programSettings = { };
-		programSettings.IgnoreWMClose = TRUE;
-		programSettings.PreformanceLogInterval = 60;
-		programSettings.UpdateCallback = Update;
-		programSettings.UserData = &mysteryImage;
+			EZ::ProgramSettings programSettings = { };
+			programSettings.IgnoreWMClose = TRUE;
+			programSettings.PreformanceLogInterval = 60;
+			programSettings.UpdateCallback = Update;
+			programSettings.UserData = &mysteryImage;
 
-		EZ::Program* program = new EZ::Program(programSettings, classSettings, windowSettings, rendererSettings);
+			EZ::Program* program = new EZ::Program(programSettings, classSettings, windowSettings, rendererSettings);
 
-		mysteryImage = program->GetRenderer()->LoadBitmap(CoverImage_Asset);
+			mysteryImage = program->GetRenderer()->LoadBitmap(CoverImage_Asset);
 
-		program->Run();
+			program->Run();
 
-		delete program;
+			delete program;
 
-		OpenWindowCount--;
+			OpenWindowCount--;
+		}
+		catch (EZ::Error error) { error.Print(); std::exit(1); }
 		});
 	monitorThread.detach();
 }
 
 struct MonitorList {
-	DWORD length;
-	HMONITOR* list;
+	DWORD length = 0;
+	HMONITOR* list = NULL;
 };
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
 	std::vector<HMONITOR>* monitors = reinterpret_cast<std::vector<HMONITOR>*>(dwData);
@@ -90,7 +99,9 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 }
 MonitorList GetMonitors() {
 	std::vector<HMONITOR>* monitors = new std::vector<HMONITOR>();
-	EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, reinterpret_cast<LPARAM>(monitors));
+	if (!EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, reinterpret_cast<LPARAM>(monitors))) {
+		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	}
 
 	DWORD length = monitors->size();
 	HMONITOR* monitorsArray = new HMONITOR[length];
@@ -104,36 +115,41 @@ MonitorList GetMonitors() {
 }
 
 int main() {
-	if (!IsAdmin()) {
-		RelaunchAsAdmin();
+	try {
+		if (!IsAdmin()) {
+			RelaunchAsAdmin();
+			return 0;
+		}
+
+		if (!IsInteractive()) {
+			RestartInteractively();
+			return 0;
+		}
+
+		if (!HasUIAccess()) {
+			RelaunchWithUIAccess();
+			return 0;
+		}
+
+		PrintTokenInfo(GetCurrentProcessToken());
+
+		BreakWinlogon();
+
+		BlockInput();
+
+		LockMaxVolume();
+
+		MonitorList monitors = GetMonitors();
+
+		for (DWORD i = 0; i < monitors.length; i++)
+		{
+			CoverMonitor(monitors.list[i]);
+		}
+
+		EZ::AudioClient::PlayExclusiveLooping(MysterySong_Asset);
+
+		delete[] monitors.list;
 		return 0;
 	}
-
-	if (!IsInteractive()) {
-		RestartInteractively();
-		return 0;
-	}
-
-	if (!HasUIAccess()) {
-		RelaunchWithUIAccess();
-		return 0;
-	}
-
-	BreakWinlogon();
-
-	BlockInput();
-
-	LockMaxVolume();
-
-	MonitorList monitors = GetMonitors();
-
-	for (DWORD i = 0; i < monitors.length; i++)
-	{
-		CoverMonitor(monitors.list[i]);
-	}
-
-	EZ::PlayExclusiveLooping(MysterySong_Asset);
-
-	delete[] monitors.list;
-	return 0;
+	catch (EZ::Error error) { error.Print(); std::exit(1); }
 }

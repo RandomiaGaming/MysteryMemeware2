@@ -3,7 +3,7 @@
 LRESULT CALLBACK EZ::Program::CustomWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	EZ::Program* program = reinterpret_cast<EZ::Program*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 
-	if (program == nullptr) {
+	if (program == NULL) {
 		// If the window is still initializing GWLP_USERDATA will be null.
 		// In this case just call DefWindowProc and keep waiting for the window to initialize.
 		return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -20,7 +20,7 @@ LRESULT CALLBACK EZ::Program::CustomWndProc(HWND hwnd, UINT uMsg, WPARAM wParam,
 		while (program->_resizeRequested) {}
 	}
 
-	if (program->_programSettings.WndProcCallback != nullptr && program->_state == EZ::Program::State::Running) {
+	if (program->_programSettings.WndProcCallback != NULL && program->_state == EZ::Program::State::Running) {
 		return program->_programSettings.WndProcCallback(program, hwnd, uMsg, wParam, lParam);
 	}
 	else {
@@ -30,16 +30,16 @@ LRESULT CALLBACK EZ::Program::CustomWndProc(HWND hwnd, UINT uMsg, WPARAM wParam,
 
 EZ::Program::Program(EZ::ProgramSettings programSettings, EZ::ClassSettings classSettings, EZ::WindowSettings windowSettings, EZ::RendererSettings rendererSettings) {
 	if (classSettings.WndProc != NULL) {
-		throw new Error("classSettings.WndProc must be NULL. Use programSettings.WndProcCallback instead.");
+		throw Error("classSettings.WndProc must be NULL. Use programSettings.WndProcCallback instead.", __FILE__, __LINE__);
 	}
 	if (classSettings.ThisThreadOnly != TRUE) {
-		throw new Error("classSettings.ThisThreadOnly must be TRUE.");
+		throw Error("classSettings.ThisThreadOnly must be TRUE.", __FILE__, __LINE__);
 	}
 	if (!windowSettings.LaunchHidden) {
-		throw new Error("windowSettings.LaunchHidden must be TRUE.");
+		throw Error("windowSettings.LaunchHidden must be TRUE.", __FILE__, __LINE__);
 	}
 	if (lstrcmp(windowSettings.ClassName, classSettings.Name) != 0) {
-		throw new Error("windowSettings.ClassName and classSettings.Name must match.");
+		throw Error("windowSettings.ClassName and classSettings.Name must match.", __FILE__, __LINE__);
 	}
 	classSettings.WndProc = CustomWndProc;
 
@@ -47,9 +47,9 @@ EZ::Program::Program(EZ::ProgramSettings programSettings, EZ::ClassSettings clas
 	_newSize = D2D1::SizeU(0, 0);
 	_resizeRequested = FALSE;
 
-	_profiler = nullptr;
-	_renderer = nullptr;
-	_window = nullptr;
+	_profiler = NULL;
+	_renderer = NULL;
+	_window = NULL;
 
 	_programSettings = programSettings;
 	_classSettings = classSettings;
@@ -61,67 +61,74 @@ EZ::Program::Program(EZ::ProgramSettings programSettings, EZ::ClassSettings clas
 	}
 
 	std::thread windowThread([this, classSettings, windowSettings]() {
-		EZ::ClassSettings classSettingsCopy = classSettings;
-		EZ::WindowSettings windowSettingsCopy = windowSettings;
+		try {
+			EZ::ClassSettings classSettingsCopy = classSettings;
+			EZ::WindowSettings windowSettingsCopy = windowSettings;
 
-		WCHAR* generatedClassName = NULL;
-		if (classSettingsCopy.Name == NULL) {
-			GUID guid;
-			CoCreateGuid(&guid);
+			WCHAR* generatedClassName = NULL;
+			if (classSettingsCopy.Name == NULL) {
+				GUID guid;
+				EZ::Error::ThrowFromHR(CoCreateGuid(&guid), __FILE__, __LINE__);
 
-			WCHAR guidString[39];
-			StringFromGUID2(guid, guidString, 39);
+				WCHAR guidString[39];
+				if (StringFromGUID2(guid, guidString, 39) < 0) {
+					EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+				}
 
-			generatedClassName = new WCHAR[57];
+				generatedClassName = new WCHAR[57];
 
-			lstrcpy(generatedClassName, L"EZProgramAutoClass");
-			lstrcpy(&generatedClassName[18], guidString);
+				lstrcpy(generatedClassName, L"EZProgramAutoClass");
+				lstrcpy(&generatedClassName[18], guidString);
 
-			classSettingsCopy.Name = generatedClassName;
-			windowSettingsCopy.ClassName = generatedClassName;
+				classSettingsCopy.Name = generatedClassName;
+				windowSettingsCopy.ClassName = generatedClassName;
+			}
+
+			EZ::RegisterClass(classSettingsCopy);
+
+			_window = new EZ::Window(windowSettingsCopy);
+
+			if (generatedClassName != NULL) {
+				delete[] generatedClassName;
+			}
+
+			SetLastError(0);
+			SetWindowLongPtr(_window->GetHandle(), GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+			if (GetLastError() != 0) {
+				EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+			}
+
+			while (_state != EZ::Program::State::Running) {}
+
+			_window->Show();
+			_window->Run();
+
+			_state = EZ::Program::State::Closed;
+
+			while (_state != EZ::Program::State::Destroyed) {}
+
+			delete _window;
 		}
-
-		EZ::RegisterClass(classSettingsCopy);
-
-		_window = new EZ::Window(windowSettingsCopy);
-
-		if (generatedClassName != NULL) {
-			delete[] generatedClassName;
-		}
-
-		SetLastError(0);
-		SetWindowLongPtr(_window->GetHandle(), GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
-		if (GetLastError() != 0) {
-			ThrowSysError();
-		}
-
-		while (_state != EZ::Program::State::Running) {}
-
-		_window->Show();
-		_window->Run();
-
-		_state = EZ::Program::State::Closed;
-
-		while (_state != EZ::Program::State::Destroyed) {}
-
-		delete _window;
+		catch (EZ::Error error) { error.Print(); std::exit(1); }
 		});
 	windowThread.detach();
 
-	while (_window == nullptr) {}
+	while (_window == NULL) {}
 
 	_renderer = new EZ::Renderer(_window->GetHandle(), rendererSettings);
 
 	if (!_programSettings.DontResizeBuffer) {
 		RECT windowSize = {};
-		GetWindowRect(_window->GetHandle(), &windowSize);
+		if (!GetWindowRect(_window->GetHandle(), &windowSize)) {
+			EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+		}
 		D2D1_SIZE_U newSize = D2D1::SizeU(windowSize.right - windowSize.left, windowSize.bottom - windowSize.top);
 		_renderer->Resize(newSize);
 	}
 }
 void EZ::Program::Run() {
 	if (_state != EZ::Program::State::Created) {
-		throw new Error("Program can only be ran once.");
+		throw Error("Program can only be ran once.");
 	}
 
 	_state = EZ::Program::State::Running;
@@ -133,7 +140,7 @@ void EZ::Program::Run() {
 		}
 
 		_renderer->BeginDraw();
-		if (_programSettings.UpdateCallback != nullptr) {
+		if (_programSettings.UpdateCallback != NULL) {
 			_programSettings.UpdateCallback(this);
 		}
 		_renderer->EndDraw();

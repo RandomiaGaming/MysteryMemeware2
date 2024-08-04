@@ -1,17 +1,22 @@
 #include "EZProfiler.h"
+#include "EZError.h"
 #include <iostream>
 
 EZ::Profiler::Profiler(LONGLONG interval) {
 	_interval = interval;
 	_frameCount = 0;
 	_lastLogTicks = 0;
-	QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&_lastLogTicks));
+	if (!QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&_lastLogTicks))) {
+		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	}
 }
 void EZ::Profiler::Tick() {
 	_frameCount++;
 	if (_frameCount > _interval) {
 		LONGLONG _ticksNow;
-		QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&_ticksNow));
+		if (!QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&_ticksNow))) {
+			EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+		}
 		LONGLONG elapsedTicks = _ticksNow - _lastLogTicks;
 		LONGLONG TPF = elapsedTicks / _frameCount;
 		LONGLONG FPS = (10000000 * _frameCount) / elapsedTicks;

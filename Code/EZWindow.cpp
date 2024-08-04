@@ -1,5 +1,5 @@
 #include "EZWindow.h"
-#include "Helper.h"
+#include "EZError.h"
 
 void EZ::RegisterClass(EZ::ClassSettings settings) {
 	WNDCLASS wc = { };
@@ -19,6 +19,9 @@ void EZ::RegisterClass(EZ::ClassSettings settings) {
 	wc.hIcon = settings.Icon;
 	if (settings.Cursor == NULL) {
 		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+		if (wc.hCursor == NULL) {
+			EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+		}
 	}
 	else {
 		wc.hCursor = settings.Cursor;
@@ -26,7 +29,7 @@ void EZ::RegisterClass(EZ::ClassSettings settings) {
 	if (!settings.CustomBackPaint) {
 		wc.hbrBackground = CreateSolidBrush(RGB(settings.BackColorR, settings.BackColorG, settings.BackColorB));
 		if (wc.hbrBackground == NULL) {
-			ThrowSysError();
+			EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 		}
 	}
 	else {
@@ -55,10 +58,13 @@ void EZ::RegisterClass(EZ::ClassSettings settings) {
 	wc.cbClsExtra = 0; // Allocate 0 extra bytes after the class declaration.
 	wc.cbWndExtra = 0; // Allocate 0 extra bytes after windows of this class.
 	wc.hInstance = GetModuleHandle(NULL); // WndProc is in the current hInstance.
+	if (wc.hInstance == NULL) {
+		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	}
 	wc.lpszMenuName = NULL; // Windows of this class have no default menu.
 
 	if (::RegisterClass(&wc) == 0) {
-		ThrowSysError();
+		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 }
 
@@ -132,33 +138,33 @@ EZ::Window::Window(EZ::WindowSettings settings) {
 		NULL // No additional data.
 	);
 	if (_handle == INVALID_HANDLE_VALUE) {
-		ThrowSysError();
+		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 }
 void EZ::Window::Show(int showCommand) {
 	if (GetCurrentThreadId() != _threadID) {
-		throw Error(L"Cross thread GUI access is not allowed.");
+		throw Error(L"Cross thread GUI access is not allowed.", __FILE__, __LINE__);
 	}
 	if (IsDestroyed() || IsShowing()) {
-		throw Error(L"Window must not be destroyed or already showing to show window.");
+		throw Error(L"Window must not be destroyed or already showing to show window.", __FILE__, __LINE__);
 	}
 	if (_processingMessage) {
-		throw Error(L"Window cannot be shown from inside WndProc.");
+		throw Error(L"Window cannot be shown from inside WndProc.", __FILE__, __LINE__);
 	}
 	ShowWindow(_handle, showCommand);
 	if (GetLastError() != 0) {
-		ThrowSysError();
+		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 }
 BOOL EZ::Window::ProcessOne(BOOL wait) {
 	if (GetCurrentThreadId() != _threadID) {
-		throw Error(L"Cross thread GUI access is not allowed.");
+		throw Error(L"Cross thread GUI access is not allowed.", __FILE__, __LINE__);
 	}
 	if (!IsShowing()) {
-		throw Error(L"Window must be showing to processing messages.");
+		throw Error(L"Window must be showing to processing messages.", __FILE__, __LINE__);
 	}
 	if (_processingMessage) {
-		throw Error(L"WndProc cannot be called from inside WndProc.");
+		throw Error(L"WndProc cannot be called from inside WndProc.", __FILE__, __LINE__);
 	}
 	_processingMessage = TRUE;
 	BOOL output = FALSE;
@@ -196,13 +202,13 @@ BOOL EZ::Window::ProcessOne(BOOL wait) {
 }
 BOOL EZ::Window::ProcessAll() {
 	if (GetCurrentThreadId() != _threadID) {
-		throw Error(L"Cross thread GUI access is not allowed.");
+		throw Error(L"Cross thread GUI access is not allowed.", __FILE__, __LINE__);
 	}
 	if (!IsShowing()) {
-		throw Error(L"Window must be showing to processing messages.");
+		throw Error(L"Window must be showing to processing messages.", __FILE__, __LINE__);
 	}
 	if (_processingMessage) {
-		throw Error(L"WndProc cannot be called from inside WndProc.");
+		throw Error(L"WndProc cannot be called from inside WndProc.", __FILE__, __LINE__);
 	}
 	_processingMessage = TRUE;
 
@@ -225,13 +231,13 @@ BOOL EZ::Window::ProcessAll() {
 }
 BOOL EZ::Window::Run() {
 	if (GetCurrentThreadId() != _threadID) {
-		throw Error(L"Cross thread GUI access is not allowed.");
+		throw Error(L"Cross thread GUI access is not allowed.", __FILE__, __LINE__);
 	}
 	if (!IsShowing()) {
-		throw Error(L"Window must be showing to processing messages.");
+		throw Error(L"Window must be showing to processing messages.", __FILE__, __LINE__);
 	}
 	if (_processingMessage) {
-		throw Error(L"WndProc cannot be called from inside WndProc.");
+		throw Error(L"WndProc cannot be called from inside WndProc.", __FILE__, __LINE__);
 	}
 	_processingMessage = TRUE;
 
@@ -254,10 +260,12 @@ BOOL EZ::Window::Run() {
 }
 EZ::Window::~Window() {
 	if (GetCurrentThreadId() != _threadID) {
-		throw Error(L"Cross thread GUI access is not allowed.");
+		throw Error(L"Cross thread GUI access is not allowed.", __FILE__, __LINE__);
 	}
 	if (!IsDestroyed()) {
-		DestroyWindow(_handle);
+		if (!DestroyWindow(_handle)) {
+			EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+		}
 	}
 }
 

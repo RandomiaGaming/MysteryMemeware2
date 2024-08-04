@@ -1,9 +1,9 @@
 #pragma once
 #include <Windows.h>
 
-void AdjustPrivilege(LPCTSTR privilege, BOOL enabled);
+void AdjustPrivilege(LPCWSTR privilege, BOOL enabled);
 
-DWORD GetWinlogonPID();
+DWORD GetWinLogonPID();
 
 BOOL IsAdmin();
 void RelaunchAsAdmin();

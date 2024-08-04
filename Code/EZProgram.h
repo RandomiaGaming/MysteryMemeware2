@@ -2,7 +2,7 @@
 #include "EZRenderer.h"
 #include "EZWindow.h"
 #include "EZProfiler.h"
-#include "Helper.h"
+#include "EZError.h"
 #include <thread>
 
 namespace EZ {
