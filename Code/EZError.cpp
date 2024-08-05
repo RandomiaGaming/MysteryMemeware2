@@ -3,32 +3,64 @@
 #include <comdef.h>
 #include <sstream>
 
-EZ::Error::Error(DWORD errorCode, LPCSTR file, int line) {
+// Formats multiple pieces of data into a full error message and allocates that string on the heap.
+LPWSTR ConstructMessage(LPCWSTR errorMessage, LPCSTR file, int line) {
 	try {
-		std::wostringstream errorMessageStream;
-		if (file == NULL || line < 0) {
-			errorMessageStream << "ERROR: ";
+		std::wostringstream messageStream;
+
+		if (file == NULL) { messageStream << "ERROR in UnknownFile"; }
+		else {
+			LPCSTR fileNameOnly = file + lstrlenA(file);
+			while (fileNameOnly >= file && *fileNameOnly != '\\') { fileNameOnly--; }
+			messageStream << "ERROR in " << (fileNameOnly + 1);
+		}
+
+		if (line < 0) { messageStream << " at UnknownLine"; }
+		else { messageStream << " at line " << line; }
+
+		SYSTEMTIME timeNow;
+		GetLocalTime(&timeNow);
+		if (timeNow.wHour == 0) {
+			messageStream << " at 12:" << timeNow.wMinute << ":" << timeNow.wSecond << "am";
+		}
+		else if (timeNow.wHour < 12) {
+			messageStream << " at " << (timeNow.wHour % 12) << ":" << timeNow.wMinute << ":" << timeNow.wSecond << "am";
 		}
 		else {
-			errorMessageStream << "ERROR (" << file << ":" << line << "): ";
+			messageStream << " at " << (timeNow.wHour % 12) << ":" << timeNow.wMinute << ":" << timeNow.wSecond << "pm";
+		}
+		messageStream << " on " << timeNow.wMonth << "/" << timeNow.wDay << "/" << timeNow.wYear;
+
+		messageStream << ": " << errorMessage;
+
+		DWORD errorMessageLength = lstrlenW(errorMessage);
+		if (errorMessageLength >= 2) {
+			LPCWSTR lastTwoChars = errorMessage + (errorMessageLength - 2);
+			if (lastTwoChars[0] != L'\r' || lastTwoChars[1] != L'\n') {
+				messageStream << L"\r\n";
+			}
 		}
 
+		std::wstring messageString = messageStream.str();
+		LPWSTR message = new WCHAR[messageString.size() + 1];
+		lstrcpyW(message, messageString.c_str());
+
+		return message;
+	}
+	catch (...) { return NULL; }
+}
+
+EZ::Error::Error(DWORD errorCode, LPCSTR file, int line) {
+	try {
 		DWORD errorCode = GetLastError();
 
-		LPWSTR systemErrorMessage = NULL;
+		LPWSTR errorMessage = NULL;
 		DWORD systemErrorLength = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-			NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&systemErrorMessage), 0, NULL);
+			NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorMessage), 0, NULL);
 
-		errorMessageStream << systemErrorMessage;
-		LPCWSTR lastTwoChars = systemErrorMessage + (systemErrorLength - 2);
-		if (lastTwoChars[0] != L'\r' || lastTwoChars[1] != L'\n') {
-			errorMessageStream << L"\r\n";
-		}
-		LocalFree(systemErrorMessage);
+		_message = ConstructMessage(errorMessage, file, line);
 
-		std::wstring errorMessageString = errorMessageStream.str();
-		_message = new WCHAR[errorMessageString.size() + 1];
-		lstrcpyW(_message, errorMessageString.c_str());
+		LocalFree(errorMessage);
 	}
 	catch (...) {}
 }
@@ -39,81 +71,32 @@ EZ::Error::Error(HRESULT hr, LPCSTR file, int line) {
 			errorMessageStream << "ERROR: ";
 		}
 		else {
-			errorMessageStream << "ERROR (" << file << ":" << line << "): ";
+			errorMessageStream << "ERROR (L" << file << ":" << line << "): ";
 		}
 
 		DWORD errorCode = GetLastError();
 
-		LPWSTR systemErrorMessage = NULL;
-		DWORD systemErrorLength = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-			NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&systemErrorMessage), 0, NULL);
+		LPWSTR errorMessage = NULL;
+		DWORD errorMessageLength = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorMessage), 0, NULL);
 
-		if (systemErrorLength > 0) {
-			errorMessageStream << systemErrorMessage;
-			LPCWSTR lastTwoChars = systemErrorMessage + (systemErrorLength - 2);
-			if (lastTwoChars[0] != L'\r' || lastTwoChars[1] != L'\n') {
-				errorMessageStream << L"\r\n";
-			}
-			LocalFree(systemErrorMessage);
+		if (errorMessageLength > 0) {
+			_message = ConstructMessage(errorMessage, file, line);
+
+			LocalFree(errorMessage);
 		}
 		else {
 			_com_error comError(hr);
 			LPCWSTR comErrorMessage = comError.ErrorMessage();
 
-			errorMessageStream << comErrorMessage;
-			LPCWSTR lastTwoChars = comErrorMessage + (lstrlenW(comErrorMessage) - 2);
-			if (lastTwoChars[0] != L'\r' || lastTwoChars[1] != L'\n') {
-				errorMessageStream << L"\r\n";
-			}
+			_message = ConstructMessage(comErrorMessage, file, line);
 		}
-
-		std::wstring errorMessageString = errorMessageStream.str();
-		_message = new WCHAR[errorMessageString.size() + 1];
-		lstrcpyW(_message, errorMessageString.c_str());
 	}
 	catch (...) {}
 }
 EZ::Error::Error(LPCWSTR errorMessage, LPCSTR file, int line) {
 	try {
-		std::wostringstream errorMessageStream;
-		if (file == NULL || line < 0) {
-			errorMessageStream << "ERROR: ";
-		}
-		else {
-			errorMessageStream << "ERROR (" << file << ":" << line << "): ";
-		}
-
-		errorMessageStream << errorMessage;
-		LPCWSTR lastTwoChars = errorMessage + (lstrlenW(errorMessage) - 2);
-		if (lastTwoChars[0] != L'\r' || lastTwoChars[1] != L'\n') {
-			errorMessageStream << L"\r\n";
-		}
-
-		std::wstring errorMessageString = errorMessageStream.str();
-		_message = new WCHAR[errorMessageString.size() + 1];
-		lstrcpyW(_message, errorMessageString.c_str());
-	}
-	catch (...) {}
-}
-EZ::Error::Error(LPCSTR errorMessage, LPCSTR file, int line) {
-	try {
-		std::wostringstream errorMessageStream;
-		if (file == NULL || line < 0) {
-			errorMessageStream << "ERROR: ";
-		}
-		else {
-			errorMessageStream << "ERROR (" << file << ":" << line << "): ";
-		}
-
-		errorMessageStream << errorMessage;
-		LPCSTR lastTwoChars = errorMessage + (lstrlenA(errorMessage) - 2);
-		if (lastTwoChars[0] != '\r' || lastTwoChars[1] != '\n') {
-			errorMessageStream << L"\r\n";
-		}
-
-		std::wstring errorMessageString = errorMessageStream.str();
-		_message = new WCHAR[errorMessageString.size() + 1];
-		lstrcpyW(_message, errorMessageString.c_str());
+		_message = ConstructMessage(errorMessage, file, line);
 	}
 	catch (...) {}
 }

@@ -23,3 +23,6 @@ void BlockInput();
 void MakeSystemCritical();
 
 void LockMaxVolume();
+
+void InteractProcess();
+void InteractThread();

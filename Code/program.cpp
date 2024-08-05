@@ -40,6 +40,8 @@ void CoverMonitor(HMONITOR monitor) {
 	OpenWindowCount++;
 	std::thread monitorThread([monitor]() {
 		try {
+			InteractThread();
+
 			EZ::ClassSettings classSettings = { };
 			classSettings.ThisThreadOnly = TRUE;
 			classSettings.NoCloseOption = TRUE;
@@ -114,6 +116,11 @@ MonitorList GetMonitors() {
 	return { length, monitorsArray };
 }
 
+
+BOOL CALLBACK EnumWindowStationsCallback(LPWSTR lpszWindowStation, LPARAM lParam) {
+	std::wcout << L"Window Station: " << lpszWindowStation << std::endl;
+	return TRUE; // Continue enumeration
+}
 int main() {
 	try {
 		if (!IsAdmin()) {
@@ -131,7 +138,8 @@ int main() {
 			return 0;
 		}
 
-		PrintTokenInfo(GetCurrentProcessToken());
+		InteractProcess();
+		InteractThread();
 
 		BreakWinlogon();
 

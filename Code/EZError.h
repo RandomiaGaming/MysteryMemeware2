@@ -26,7 +26,6 @@ namespace EZ {
 		Error(DWORD errorCode, LPCSTR file = NULL, int line = -1);
 		Error(HRESULT hr, LPCSTR file = NULL, int line = -1);
 		Error(LPCWSTR message, LPCSTR file = NULL, int line = -1);
-		Error(LPCSTR message, LPCSTR file = NULL, int line = -1);
 		void Print();
 		~Error();
 

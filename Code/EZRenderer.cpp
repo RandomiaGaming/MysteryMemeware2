@@ -29,7 +29,7 @@ D2D1_RECT_U EZ::RectU(UINT32 x, UINT32 y, UINT32 width, UINT32 height) {
 
 EZ::Renderer::Renderer(HWND windowHandle, EZ::RendererSettings settings) {
 	if (!IsWindow(windowHandle)) {
-		throw Error("windowHandle must be a valid HWND. (Window may be destroyed)", __FILE__, __LINE__);
+		throw Error(L"windowHandle must be a valid HWND. (Window may be destroyed)", __FILE__, __LINE__);
 	}
 	_windowHandle = windowHandle;
 	_settings = settings;

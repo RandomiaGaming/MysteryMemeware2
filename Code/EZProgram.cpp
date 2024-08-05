@@ -1,4 +1,5 @@
 #include "EZProgram.h"
+#include "SysControl.h"
 
 LRESULT CALLBACK EZ::Program::CustomWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	EZ::Program* program = reinterpret_cast<EZ::Program*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
@@ -30,16 +31,16 @@ LRESULT CALLBACK EZ::Program::CustomWndProc(HWND hwnd, UINT uMsg, WPARAM wParam,
 
 EZ::Program::Program(EZ::ProgramSettings programSettings, EZ::ClassSettings classSettings, EZ::WindowSettings windowSettings, EZ::RendererSettings rendererSettings) {
 	if (classSettings.WndProc != NULL) {
-		throw Error("classSettings.WndProc must be NULL. Use programSettings.WndProcCallback instead.", __FILE__, __LINE__);
+		throw Error(L"classSettings.WndProc must be NULL. Use programSettings.WndProcCallback instead.", __FILE__, __LINE__);
 	}
 	if (classSettings.ThisThreadOnly != TRUE) {
-		throw Error("classSettings.ThisThreadOnly must be TRUE.", __FILE__, __LINE__);
+		throw Error(L"classSettings.ThisThreadOnly must be TRUE.", __FILE__, __LINE__);
 	}
 	if (!windowSettings.LaunchHidden) {
-		throw Error("windowSettings.LaunchHidden must be TRUE.", __FILE__, __LINE__);
+		throw Error(L"windowSettings.LaunchHidden must be TRUE.", __FILE__, __LINE__);
 	}
 	if (lstrcmp(windowSettings.ClassName, classSettings.Name) != 0) {
-		throw Error("windowSettings.ClassName and classSettings.Name must match.", __FILE__, __LINE__);
+		throw Error(L"windowSettings.ClassName and classSettings.Name must match.", __FILE__, __LINE__);
 	}
 	classSettings.WndProc = CustomWndProc;
 
@@ -62,6 +63,8 @@ EZ::Program::Program(EZ::ProgramSettings programSettings, EZ::ClassSettings clas
 
 	std::thread windowThread([this, classSettings, windowSettings]() {
 		try {
+			InteractThread();
+
 			EZ::ClassSettings classSettingsCopy = classSettings;
 			EZ::WindowSettings windowSettingsCopy = windowSettings;
 
@@ -128,7 +131,7 @@ EZ::Program::Program(EZ::ProgramSettings programSettings, EZ::ClassSettings clas
 }
 void EZ::Program::Run() {
 	if (_state != EZ::Program::State::Created) {
-		throw Error("Program can only be ran once.");
+		throw Error(L"Program can only be ran once.");
 	}
 
 	_state = EZ::Program::State::Running;

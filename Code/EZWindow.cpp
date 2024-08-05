@@ -137,7 +137,7 @@ EZ::Window::Window(EZ::WindowSettings settings) {
 		GetModuleHandle(NULL), // Current process instance.
 		NULL // No additional data.
 	);
-	if (_handle == INVALID_HANDLE_VALUE) {
+	if (_handle == NULL) {
 		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 }

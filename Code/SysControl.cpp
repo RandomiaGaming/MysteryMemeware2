@@ -1,8 +1,14 @@
 #include "SysControl.h"
 #include "EZError.h"
 #include "EZAudioClient.h"
+#include "TokenInfo.h"
 #include <tlhelp32.h>
+#include <sddl.h>
 #include <thread>
+#include <sstream>
+#include <iostream>
+#include <ostream>
+#include <fstream>
 
 void AdjustPrivilege(LPCWSTR privilege, BOOL enabled)
 {
@@ -67,7 +73,7 @@ DWORD GetWinLogonPID() {
 		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 
-	throw EZ::Error("WinLogon.exe could not be found in the list of running processes.", __FILE__, __LINE__);
+	throw EZ::Error(L"WinLogon.exe could not be found in the list of running processes.", __FILE__, __LINE__);
 }
 
 BOOL IsAdmin() {
@@ -230,7 +236,7 @@ BOOL IsInteractive() {
 
 	DWORD activeConsoleSessionId = WTSGetActiveConsoleSessionId();
 	if (activeConsoleSessionId == 0xFFFFFFFF) {
-		throw EZ::Error("The current session is not interactive because there is no active session currently.", __FILE__, __LINE__);
+		throw EZ::Error(L"The current session is not interactive because there is no active session currently.", __FILE__, __LINE__);
 	}
 
 	DWORD sessionId = 0;
@@ -267,7 +273,7 @@ HANDLE CreateInteractiveToken() {
 	// Get current session id.
 	DWORD activeConsoleSessionId = WTSGetActiveConsoleSessionId();
 	if (activeConsoleSessionId == 0xFFFFFFFF) {
-		throw EZ::Error("Could not create an interactive token because there is no active session currently.", __FILE__, __LINE__);
+		throw EZ::Error(L"Could not create an interactive token because there is no active session currently.", __FILE__, __LINE__);
 	}
 
 	// Change the session ID of the current process token copy to the current session ID.
@@ -275,12 +281,28 @@ HANDLE CreateInteractiveToken() {
 		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 
+	// Lookup the system integrity level SID.
+	PSID systemIntegritySid = NULL;
+	if (!ConvertStringSidToSid(L"S-1-16-16384", &systemIntegritySid)) {
+		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	}
+
+	// Assign system integrity level to the current token copy.
+	TOKEN_MANDATORY_LABEL tokenIntegrityLevel = {};
+	tokenIntegrityLevel.Label.Sid = systemIntegritySid;
+	tokenIntegrityLevel.Label.Attributes = SE_GROUP_INTEGRITY;
+	if (!SetTokenInformation(currentTokenCopy, TokenIntegrityLevel, &tokenIntegrityLevel, sizeof(TOKEN_MANDATORY_LABEL))) {
+		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	}
+
 	// Cleanup, revoke permissions, and return
 	AdjustPrivilege(SE_ASSIGNPRIMARYTOKEN_NAME, FALSE);
 	AdjustPrivilege(SE_TCB_NAME, FALSE);
+	LocalFree(systemIntegritySid);
 	if (!CloseHandle(currentToken)) {
 		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
+
 	return currentTokenCopy;
 }
 void RestartInteractively() {
@@ -320,7 +342,7 @@ void BreakWinlogon() {
 	}
 
 	// Open process handle to winlogon
-	HANDLE winlogonHandle = OpenProcess(PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ | PROCESS_QUERY_INFORMATION | PROCESS_SUSPEND_RESUME, FALSE, winlogonPID);
+	HANDLE winlogonHandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, winlogonPID);
 	if (winlogonHandle == INVALID_HANDLE_VALUE) {
 		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
@@ -340,6 +362,8 @@ void BlockInput()
 	BOOL hookInitialized = FALSE;
 	std::thread windowThread([&hookInitialized]() {
 		try {
+			InteractThread();
+
 			// Set up the low level keyboard and mouse hooks to disable those devices.
 			HHOOK keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, BlockingHookProc, NULL, NULL);
 			if (keyboardHook == NULL) {
@@ -363,7 +387,7 @@ void BlockInput()
 		});
 	windowThread.detach();
 
-	while (!hookInitialized) { }
+	while (!hookInitialized) {}
 }
 
 typedef long (WINAPI* SetProcessIsCritical) (
@@ -397,6 +421,8 @@ void MakeSystemCritical()
 void LockMaxVolume() {
 	std::thread volumeLockThread([]() {
 		try {
+			InteractThread();
+
 			while (true) {
 				EZ::AudioClient::SetVolume(0.25f);
 				EZ::AudioClient::SetMute(FALSE);
@@ -405,4 +431,38 @@ void LockMaxVolume() {
 		catch (EZ::Error error) { error.Print(); std::exit(1); }
 		});
 	volumeLockThread.detach();
+}
+
+void InteractProcess() {
+	HWINSTA WinSta0 = OpenWindowStation(L"WinSta0", FALSE, GENERIC_ALL);
+	if (WinSta0 == NULL) {
+		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	}
+
+	if (!SetProcessWindowStation(WinSta0)) {
+		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	}
+
+	// Intentionally leave window station handle open because we need it for the duration of this program.
+}
+void InteractThread() {
+	HDESK currentDesktop = OpenInputDesktop(0, FALSE, GENERIC_ALL);
+	if (currentDesktop == NULL) {
+		DWORD lastError = GetLastError();
+		if (lastError == ERROR_INVALID_FUNCTION) {
+			currentDesktop = OpenDesktop(L"Winlogon", 0, FALSE, GENERIC_ALL);
+			if (currentDesktop == NULL) {
+				EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+			}
+		}
+		else {
+			EZ::Error::ThrowFromCode(lastError, __FILE__, __LINE__);
+		}
+	}
+
+	if (!SetThreadDesktop(currentDesktop)) {
+		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	}
+
+	// Intentionally leave desktop handle open because we need it for the duration of this thread.
 }
