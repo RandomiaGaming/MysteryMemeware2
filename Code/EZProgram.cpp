@@ -1,5 +1,5 @@
 #include "EZProgram.h"
-#include "SysControl.h"
+#include "program.h"
 
 LRESULT CALLBACK EZ::Program::CustomWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	EZ::Program* program = reinterpret_cast<EZ::Program*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));

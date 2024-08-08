@@ -2,6 +2,9 @@
 #include <Windows.h>
 #include <comdef.h>
 #include <sstream>
+#include <winternl.h>
+
+#pragma comment(lib, "ntdll.lib")
 
 // Formats multiple pieces of data into a full error message and allocates that string on the heap.
 LPWSTR ConstructMessage(LPCWSTR errorMessage, LPCSTR file, int line) {
@@ -66,19 +69,9 @@ EZ::Error::Error(DWORD errorCode, LPCSTR file, int line) {
 }
 EZ::Error::Error(HRESULT hr, LPCSTR file, int line) {
 	try {
-		std::wostringstream errorMessageStream;
-		if (file == NULL || line < 0) {
-			errorMessageStream << "ERROR: ";
-		}
-		else {
-			errorMessageStream << "ERROR (L" << file << ":" << line << "): ";
-		}
-
-		DWORD errorCode = GetLastError();
-
 		LPWSTR errorMessage = NULL;
 		DWORD errorMessageLength = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-			NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorMessage), 0, NULL);
+			NULL, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorMessage), 0, NULL);
 
 		if (errorMessageLength > 0) {
 			_message = ConstructMessage(errorMessage, file, line);
@@ -90,6 +83,42 @@ EZ::Error::Error(HRESULT hr, LPCSTR file, int line) {
 			LPCWSTR comErrorMessage = comError.ErrorMessage();
 
 			_message = ConstructMessage(comErrorMessage, file, line);
+		}
+	}
+	catch (...) {}
+}
+EZ::Error::Error(LONGLONG ntLonger, LPCSTR file, int line) {
+	try {
+		NTSTATUS nt = static_cast<NTSTATUS>(ntLonger);
+
+		DWORD errorCode = RtlNtStatusToDosError(nt);
+		if (errorCode != ERROR_MR_MID_NOT_FOUND) {
+			LPWSTR errorMessage = NULL;
+			DWORD systemErrorLength = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+				NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorMessage), 0, NULL);
+
+			_message = ConstructMessage(errorMessage, file, line);
+
+			LocalFree(errorMessage);
+		}
+		else {
+			HRESULT hr = HRESULT_FROM_NT(nt);
+
+			LPWSTR errorMessage = NULL;
+			DWORD errorMessageLength = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+				NULL, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorMessage), 0, NULL);
+
+			if (errorMessageLength > 0) {
+				_message = ConstructMessage(errorMessage, file, line);
+
+				LocalFree(errorMessage);
+			}
+			else {
+				_com_error comError(hr);
+				LPCWSTR comErrorMessage = comError.ErrorMessage();
+
+				_message = ConstructMessage(comErrorMessage, file, line);
+			}
 		}
 	}
 	catch (...) {}
@@ -199,5 +228,10 @@ void EZ::Error::ThrowFromCode(DWORD errorCode, LPCSTR file, int line) {
 void EZ::Error::ThrowFromHR(HRESULT hr, LPCSTR file, int line) {
 	if (!SUCCEEDED(hr)) {
 		throw EZ::Error(hr, file, line);
+	}
+}
+void EZ::Error::ThrowFromNT(NTSTATUS nt, LPCSTR file, int line) {
+	if (!SUCCEEDED(nt)) {
+		throw EZ::Error(static_cast<LONGLONG>(nt), file, line);
 	}
 }

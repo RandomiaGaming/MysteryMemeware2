@@ -25,6 +25,7 @@ namespace EZ {
 	public:
 		Error(DWORD errorCode, LPCSTR file = NULL, int line = -1);
 		Error(HRESULT hr, LPCSTR file = NULL, int line = -1);
+		Error(LONGLONG ntLonger, LPCSTR file = NULL, int line = -1);
 		Error(LPCWSTR message, LPCSTR file = NULL, int line = -1);
 		void Print();
 		~Error();
@@ -35,6 +36,7 @@ namespace EZ {
 
 		static void ThrowFromCode(DWORD errorCode, LPCSTR file = NULL, int line = -1);
 		static void ThrowFromHR(HRESULT hr, LPCSTR file = NULL, int line = -1);
+		static void ThrowFromNT(NTSTATUS nt, LPCSTR file = NULL, int line = -1);
 
 	private:
 		LPWSTR _message = NULL;

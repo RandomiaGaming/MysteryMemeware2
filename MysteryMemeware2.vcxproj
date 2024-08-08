@@ -18,6 +18,30 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Code\CoverImage.h" />
+    <ClInclude Include="Code\EZAudioClient.h" />
+    <ClInclude Include="Code\EZError.h" />
+    <ClInclude Include="Code\EZProfiler.h" />
+    <ClInclude Include="Code\EZProgram.h" />
+    <ClInclude Include="Code\EZRenderer.h" />
+    <ClInclude Include="Code\EZTokens.h" />
+    <ClInclude Include="Code\EZWindow.h" />
+    <ClInclude Include="Code\MysterySong.h" />
+    <ClInclude Include="Code\program.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Code\CoverImage.cpp" />
+    <ClCompile Include="Code\EZAudioClient.cpp" />
+    <ClCompile Include="Code\EZError.cpp" />
+    <ClCompile Include="Code\EZProfiler.cpp" />
+    <ClCompile Include="Code\EZProgram.cpp" />
+    <ClCompile Include="Code\EZRenderer.cpp" />
+    <ClCompile Include="Code\EZTokens.cpp" />
+    <ClCompile Include="Code\EZWindow.cpp" />
+    <ClCompile Include="Code\MysterySong.cpp" />
+    <ClCompile Include="Code\program.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -133,31 +157,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="Code\CoverImage.cpp" />
-    <ClCompile Include="Code\MysterySong.cpp" />
-    <ClCompile Include="Code\EZAudioClient.cpp" />
-    <ClCompile Include="Code\EZError.cpp" />
-    <ClCompile Include="Code\program.cpp" />
-    <ClCompile Include="Code\EZProfiler.cpp" />
-    <ClCompile Include="Code\EZProgram.cpp" />
-    <ClCompile Include="Code\EZRenderer.cpp" />
-    <ClCompile Include="Code\EZWindow.cpp" />
-    <ClCompile Include="Code\TokenInfo.cpp" />
-    <ClCompile Include="Code\SysControl.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Code\CoverImage.h" />
-    <ClInclude Include="Code\MysterySong.h" />
-    <ClInclude Include="Code\EZError.h" />
-    <ClInclude Include="Code\EZProfiler.h" />
-    <ClInclude Include="Code\EZProgram.h" />
-    <ClInclude Include="Code\EZRenderer.h" />
-    <ClInclude Include="Code\EZAudioClient.h" />
-    <ClInclude Include="Code\EZWindow.h" />
-    <ClInclude Include="Code\TokenInfo.h" />
-    <ClInclude Include="Code\SysControl.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
