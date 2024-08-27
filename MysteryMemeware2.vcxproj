@@ -20,25 +20,27 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\CoverImage.h" />
-    <ClInclude Include="Code\EZAudioClient.h" />
-    <ClInclude Include="Code\EZError.h" />
-    <ClInclude Include="Code\EZProfiler.h" />
-    <ClInclude Include="Code\EZProgram.h" />
-    <ClInclude Include="Code\EZRenderer.h" />
-    <ClInclude Include="Code\EZTokens.h" />
-    <ClInclude Include="Code\EZWindow.h" />
+    <ClInclude Include="Code\EzAudioPlayer.h" />
+    <ClInclude Include="Code\EzError.h" />
+    <ClInclude Include="Code\EzRenderer.h" />
+    <ClInclude Include="Code\EzTokens.h" />
+    <ClInclude Include="Code\EzWindow.h" />
+    <ClInclude Include="Code\MysteryAudio.h" />
+    <ClInclude Include="Code\MysteryControl.h" />
+    <ClInclude Include="Code\MysteryGraphics.h" />
     <ClInclude Include="Code\MysterySong.h" />
     <ClInclude Include="Code\program.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\CoverImage.cpp" />
-    <ClCompile Include="Code\EZAudioClient.cpp" />
-    <ClCompile Include="Code\EZError.cpp" />
-    <ClCompile Include="Code\EZProfiler.cpp" />
-    <ClCompile Include="Code\EZProgram.cpp" />
+    <ClCompile Include="Code\EzAudioPlayer.cpp" />
+    <ClCompile Include="Code\EzError.cpp" />
     <ClCompile Include="Code\EZRenderer.cpp" />
-    <ClCompile Include="Code\EZTokens.cpp" />
-    <ClCompile Include="Code\EZWindow.cpp" />
+    <ClCompile Include="Code\EzTokens.cpp" />
+    <ClCompile Include="Code\EzWindow.cpp" />
+    <ClCompile Include="Code\MysteryAudio.cpp" />
+    <ClCompile Include="Code\MysteryControl.cpp" />
+    <ClCompile Include="Code\MysteryGraphics.cpp" />
     <ClCompile Include="Code\MysterySong.cpp" />
     <ClCompile Include="Code\program.cpp" />
   </ItemGroup>

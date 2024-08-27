@@ -15,10 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Code\EZError.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\program.h">
+    <ClInclude Include="Code\EzError.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Code\MysterySong.h">
@@ -27,27 +24,33 @@
     <ClInclude Include="Code\EZWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Code\EZTokens.h">
+    <ClInclude Include="Code\EzTokens.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Code\EZRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\EZProgram.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\EZProfiler.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\EZAudioClient.h">
+    <ClInclude Include="Code\EzRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Code\CoverImage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Code\EzAudioPlayer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\MysteryAudio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\MysteryControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\MysteryGraphics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\program.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Code\EZError.cpp">
+    <ClCompile Include="Code\EzError.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Code\program.cpp">
@@ -59,22 +62,25 @@
     <ClCompile Include="Code\EZWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Code\EZTokens.cpp">
+    <ClCompile Include="Code\EzTokens.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Code\EZRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Code\EZProgram.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\EZProfiler.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\EZAudioClient.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Code\CoverImage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\EzAudioPlayer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\MysteryAudio.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\MysteryControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\MysteryGraphics.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

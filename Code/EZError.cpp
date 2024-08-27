@@ -1,13 +1,10 @@
-#include "EZError.h"
+#include "EzError.h"
 #include <Windows.h>
 #include <comdef.h>
 #include <sstream>
-#include <winternl.h>
-
-#pragma comment(lib, "ntdll.lib")
 
 // Formats multiple pieces of data into a full error message and allocates that string on the heap.
-LPWSTR ConstructMessage(LPCWSTR errorMessage, LPCSTR file, int line) {
+LPWSTR ConstructMessage(LPCWSTR errorMessage, DWORD errorCode, HRESULT hr, NTSTATUS nt, LPCSTR file, int line) {
 	try {
 		std::wostringstream messageStream;
 
@@ -34,6 +31,16 @@ LPWSTR ConstructMessage(LPCWSTR errorMessage, LPCSTR file, int line) {
 		}
 		messageStream << " on " << timeNow.wMonth << "/" << timeNow.wDay << "/" << timeNow.wYear;
 
+		if (nt != 0) {
+			messageStream << " from NtStatus " << reinterpret_cast<void*>(nt);
+		}
+		else if (hr != 0) {
+			messageStream << " from HResult " << reinterpret_cast<void*>(hr);
+		}
+		else if (errorCode != 0) {
+			messageStream << " from DOS error " << reinterpret_cast<void*>(errorCode);
+		}
+
 		messageStream << ": " << errorMessage;
 
 		DWORD errorMessageLength = lstrlenW(errorMessage);
@@ -53,84 +60,86 @@ LPWSTR ConstructMessage(LPCWSTR errorMessage, LPCSTR file, int line) {
 	catch (...) { return NULL; }
 }
 
-EZ::Error::Error(DWORD errorCode, LPCSTR file, int line) {
+EzError::EzError(DWORD errorCode, LPCSTR file, int line) {
 	try {
-		DWORD errorCode = GetLastError();
+		_errorCode = errorCode;
+		_hr = 0;
+		_nt = 0;
 
 		LPWSTR errorMessage = NULL;
 		DWORD systemErrorLength = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-			NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorMessage), 0, NULL);
+			NULL, _errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorMessage), 0, NULL);
 
-		_message = ConstructMessage(errorMessage, file, line);
+		_message = ConstructMessage(errorMessage, _errorCode, _hr, _nt, file, line);
 
 		LocalFree(errorMessage);
 	}
 	catch (...) {}
 }
-EZ::Error::Error(HRESULT hr, LPCSTR file, int line) {
+EzError::EzError(HRESULT hr, LPCSTR file, int line) {
 	try {
+		_errorCode = 0;
+		_hr = hr;
+		_nt = 0;
+
 		LPWSTR errorMessage = NULL;
 		DWORD errorMessageLength = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-			NULL, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorMessage), 0, NULL);
+			NULL, _hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorMessage), 0, NULL);
 
 		if (errorMessageLength > 0) {
-			_message = ConstructMessage(errorMessage, file, line);
+			_message = ConstructMessage(errorMessage, _errorCode, _hr, _nt, file, line);
 
 			LocalFree(errorMessage);
 		}
 		else {
-			_com_error comError(hr);
+			_com_error comError(_hr);
 			LPCWSTR comErrorMessage = comError.ErrorMessage();
 
-			_message = ConstructMessage(comErrorMessage, file, line);
+			_message = ConstructMessage(comErrorMessage, _errorCode, _hr, _nt, file, line);
 		}
 	}
 	catch (...) {}
 }
-EZ::Error::Error(LONGLONG ntLonger, LPCSTR file, int line) {
+EzError::EzError(LONGLONG ntLonger, LPCSTR file, int line) {
 	try {
-		NTSTATUS nt = static_cast<NTSTATUS>(ntLonger);
+		_errorCode = 0;
+		_nt = static_cast<NTSTATUS>(ntLonger);
+		_hr = HRESULT_FROM_NT(_nt);
 
-		DWORD errorCode = RtlNtStatusToDosError(nt);
-		if (errorCode != ERROR_MR_MID_NOT_FOUND) {
-			LPWSTR errorMessage = NULL;
-			DWORD systemErrorLength = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-				NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorMessage), 0, NULL);
+		LPWSTR errorMessage = NULL;
+		DWORD errorMessageLength = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL, _hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorMessage), 0, NULL);
 
-			_message = ConstructMessage(errorMessage, file, line);
+		if (errorMessageLength > 0) {
+			_message = ConstructMessage(errorMessage, _errorCode, _hr, _nt, file, line);
 
 			LocalFree(errorMessage);
 		}
 		else {
-			HRESULT hr = HRESULT_FROM_NT(nt);
+			_com_error comError(_hr);
+			LPCWSTR comErrorMessage = comError.ErrorMessage();
 
-			LPWSTR errorMessage = NULL;
-			DWORD errorMessageLength = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-				NULL, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorMessage), 0, NULL);
-
-			if (errorMessageLength > 0) {
-				_message = ConstructMessage(errorMessage, file, line);
-
-				LocalFree(errorMessage);
-			}
-			else {
-				_com_error comError(hr);
-				LPCWSTR comErrorMessage = comError.ErrorMessage();
-
-				_message = ConstructMessage(comErrorMessage, file, line);
-			}
+			_message = ConstructMessage(comErrorMessage, _errorCode, _hr, _nt, file, line);
 		}
 	}
 	catch (...) {}
 }
-EZ::Error::Error(LPCWSTR errorMessage, LPCSTR file, int line) {
+EzError::EzError(LPCWSTR errorMessage, LPCSTR file, int line) {
 	try {
-		_message = ConstructMessage(errorMessage, file, line);
+		_errorCode = 0;
+		_hr = 0;
+		_nt = 0;
+
+		_message = ConstructMessage(errorMessage, _errorCode, _hr, _nt, file, line);
 	}
 	catch (...) {}
 }
 
-EZ::Error::Error(const EZ::Error& other) {
+EzError::EzError(const EzError& other) {
+	_errorCode = other._errorCode;
+	_hr = other._hr;
+	_nt = other._nt;
+
 	if (other._message != NULL) {
 		size_t messageLength = lstrlenW(other._message) + 1;
 		_message = new WCHAR[messageLength];
@@ -140,9 +149,13 @@ EZ::Error::Error(const EZ::Error& other) {
 		_message = NULL;
 	}
 }
-EZ::Error& EZ::Error::operator=(const EZ::Error& other) {
+EzError& EzError::operator=(const EzError& other) {
 	if (this != &other) {
-		this->~Error();
+		_errorCode = other._errorCode;
+		_hr = other._hr;
+		_nt = other._nt;
+
+		this->~EzError();
 		if (other._message != NULL) {
 			size_t messageLength = lstrlenW(other._message) + 1;
 			_message = new WCHAR[messageLength];
@@ -155,7 +168,7 @@ EZ::Error& EZ::Error::operator=(const EZ::Error& other) {
 	return *this;
 }
 
-void EZ::Error::Print() {
+void EzError::Print() {
 	try {
 		HANDLE stdoutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -165,7 +178,7 @@ void EZ::Error::Print() {
 		WORD savedAttributes = consoleInfo.wAttributes;
 
 		// Set console attributes to red text.
-		SetConsoleTextAttribute(stdoutHandle, static_cast<WORD>(EZ::ConsoleColor::Red));
+		SetConsoleTextAttribute(stdoutHandle, static_cast<WORD>(EzConsoleColor::Red));
 
 		// Print error message.
 		DWORD charsWritten = 0;
@@ -211,7 +224,7 @@ void EZ::Error::Print() {
 	}
 	catch (...) {}
 }
-EZ::Error::~Error() {
+EzError::~EzError() {
 	try {
 		if (_message != NULL) {
 			delete[] _message;
@@ -220,18 +233,18 @@ EZ::Error::~Error() {
 	catch (...) {}
 }
 
-void EZ::Error::ThrowFromCode(DWORD errorCode, LPCSTR file, int line) {
+void EzError::ThrowFromCode(DWORD errorCode, LPCSTR file, int line) {
 	if (errorCode != 0) {
-		throw EZ::Error(errorCode, file, line);
+		throw EzError(errorCode, file, line);
 	}
 }
-void EZ::Error::ThrowFromHR(HRESULT hr, LPCSTR file, int line) {
-	if (!SUCCEEDED(hr)) {
-		throw EZ::Error(hr, file, line);
+void EzError::ThrowFromHR(HRESULT hr, LPCSTR file, int line) {
+	if (FAILED(hr)) {
+		throw EzError(hr, file, line);
 	}
 }
-void EZ::Error::ThrowFromNT(NTSTATUS nt, LPCSTR file, int line) {
-	if (!SUCCEEDED(nt)) {
-		throw EZ::Error(static_cast<LONGLONG>(nt), file, line);
+void EzError::ThrowFromNT(NTSTATUS nt, LPCSTR file, int line) {
+	if (FAILED(nt)) {
+		throw EzError(static_cast<LONGLONG>(nt), file, line);
 	}
 }

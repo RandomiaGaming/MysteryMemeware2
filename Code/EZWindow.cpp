@@ -1,57 +1,57 @@
-#include "EZWindow.h"
-#include "EZError.h"
+#include "EzWindow.h"
+#include "EzError.h"
 
-void EZ::RegisterClass(EZ::ClassSettings settings) {
+ATOM EzRegisterClass(const EzClassSettings* settings) {
 	WNDCLASS wc = { };
-	if (settings.Name == NULL) {
-		wc.lpszClassName = EZ::DefaultClassName;
+	if (settings->Name == NULL) {
+		wc.lpszClassName = EzDefaultClassName;
 	}
 	else {
-		wc.lpszClassName = settings.Name;
+		wc.lpszClassName = settings->Name;
 	}
-	if (settings.WndProc == NULL) {
+	if (settings->WndProc == NULL) {
 		wc.lpfnWndProc = DefWindowProc;
 	}
 	else {
-		wc.lpfnWndProc = settings.WndProc;
+		wc.lpfnWndProc = settings->WndProc;
 	}
 	// NULL tells windows to use the default icon so no need to explicitly set it.
-	wc.hIcon = settings.Icon;
-	if (settings.Cursor == NULL) {
+	wc.hIcon = settings->Icon;
+	if (settings->Cursor == NULL) {
 		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 		if (wc.hCursor == NULL) {
-			EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+			EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 		}
 	}
 	else {
-		wc.hCursor = settings.Cursor;
+		wc.hCursor = settings->Cursor;
 	}
-	if (!settings.CustomBackPaint) {
-		wc.hbrBackground = CreateSolidBrush(RGB(settings.BackColorR, settings.BackColorG, settings.BackColorB));
+	if (!settings->CustomBackPaint) {
+		wc.hbrBackground = CreateSolidBrush(RGB(settings->BackColorR, settings->BackColorG, settings->BackColorB));
 		if (wc.hbrBackground == NULL) {
-			EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+			EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 		}
 	}
 	else {
 		wc.hbrBackground = NULL;
 	}
-	wc.style = settings.Styles;
-	if (!settings.DontRedrawOnSize) {
+	wc.style = settings->Styles;
+	if (!settings->DontRedrawOnSize) {
 		wc.style |= CS_HREDRAW | CS_VREDRAW;
 	}
-	if (settings.UniversalDropShadow) {
+	if (settings->UniversalDropShadow) {
 		wc.style |= CS_DROPSHADOW;
 	}
-	if (!settings.IgnoreDoubleClicks) {
+	if (!settings->IgnoreDoubleClicks) {
 		wc.style |= CS_DBLCLKS;
 	}
-	if (settings.NoCloseOption) {
+	if (settings->NoCloseOption) {
 		wc.style |= CS_NOCLOSE;
 	}
-	if (settings.SaveClippedGraphics) {
+	if (settings->SaveClippedGraphics) {
 		wc.style |= CS_SAVEBITS;
 	}
-	if (!settings.ThisThreadOnly) {
+	if (!settings->ThisThreadOnly) {
 		wc.style |= CS_GLOBALCLASS;
 	}
 
@@ -59,225 +59,215 @@ void EZ::RegisterClass(EZ::ClassSettings settings) {
 	wc.cbWndExtra = 0; // Allocate 0 extra bytes after windows of this class.
 	wc.hInstance = GetModuleHandle(NULL); // WndProc is in the current hInstance.
 	if (wc.hInstance == NULL) {
-		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 	wc.lpszMenuName = NULL; // Windows of this class have no default menu.
 
-	if (::RegisterClass(&wc) == 0) {
-		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	ATOM output = RegisterClass(&wc);
+	if (output == 0) {
+		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
+	return output;
 }
 
+HWND EzCreateWindow(const EzWindowSettings* settings) {
+	LPCWSTR title;
+	if (settings->Title == NULL) {
+		title = EzDefaultWindowTitle;
+	}
+	else {
+		title = settings->Title;
+	}
 
+	LPCWSTR className;
+	if (settings->ClassName == NULL) {
+		className = EzDefaultClassName;
+	}
+	else {
+		className = settings->ClassName;
+	}
 
-EZ::Window::Window(EZ::WindowSettings settings) {
-	_processingMessage = FALSE;
-	_threadID = GetCurrentThreadId();
-	_settings = settings;
+	int initialX = settings->InitialX;
+	if (settings->InitialX == 0x80000000) {
+		initialX = GetSystemMetrics(SM_CXSCREEN) / 4;
+	}
+	int initialY = settings->InitialY;
+	if (settings->InitialY == 0x80000000) {
+		initialY = GetSystemMetrics(SM_CYSCREEN) / 4;
+	}
+	int initialWidth = settings->InitialWidth;
+	if (settings->InitialWidth == 0xFFFFFFFF) {
+		initialWidth = GetSystemMetrics(SM_CXSCREEN) / 2;
+	}
+	int initialHeight = settings->InitialHeight;
+	if (settings->InitialHeight == 0xFFFFFFFF) {
+		initialHeight = GetSystemMetrics(SM_CYSCREEN) / 2;
+	}
 
-	if (_settings.Title == NULL) {
-		_settings.Title = DefaultWindowTitle;
-	}
-	if (_settings.ClassName == NULL) {
-		_settings.ClassName = DefaultClassName;
-	}
-	if (_settings.InitialX == CW_USEDEFAULT) {
-		_settings.InitialX = GetSystemMetrics(SM_CXSCREEN) / 4;
-	}
-	if (_settings.InitialY == CW_USEDEFAULT) {
-		_settings.InitialY = GetSystemMetrics(SM_CYSCREEN) / 4;
-	}
-	if (_settings.InitialWidth == CW_USEDEFAULT) {
-		_settings.InitialWidth = GetSystemMetrics(SM_CXSCREEN) / 2;
-	}
-	if (_settings.InitialHeight == CW_USEDEFAULT) {
-		_settings.InitialHeight = GetSystemMetrics(SM_CYSCREEN) / 2;
-	}
-	switch (_settings.StylePreset) {
-	case EZ::WindowStylePreset::Normal:
-		_settings.Styles |= WS_OVERLAPPEDWINDOW;
+	DWORD styles = settings->Styles;
+	switch (settings->StylePreset) {
+	case EzWindowStylePreset::Normal:
+		styles |= WS_OVERLAPPEDWINDOW;
 		break;
-	case EZ::WindowStylePreset::Popup:
-		_settings.Styles |= WS_POPUPWINDOW;
+	case EzWindowStylePreset::Popup:
+		styles |= WS_POPUPWINDOW;
 		break;
-	case EZ::WindowStylePreset::Boarderless:
-		_settings.Styles |= WS_POPUP;
+	case EzWindowStylePreset::Boarderless:
+		styles |= WS_POPUP;
 		break;
-	case EZ::WindowStylePreset::DontTouchMyStyles:
+	case EzWindowStylePreset::DontTouchMyStyles:
 	default:
 		break;
 	}
-	if (!_settings.LaunchHidden) {
-		_settings.Styles |= WS_VISIBLE;
-	}
-	if (_settings.DragNDropFiles) {
-		_settings.ExtendedStyles |= WS_EX_ACCEPTFILES;
-	}
-	if (_settings.IgnoreFocusSwitch) {
-		_settings.ExtendedStyles |= WS_EX_NOACTIVATE;
-	}
-	if (_settings.TopMost) {
-		_settings.ExtendedStyles |= WS_EX_TOPMOST;
-	}
-	if (_settings.HideInTaskbar) {
-		_settings.ExtendedStyles |= WS_EX_TOOLWINDOW;
+	if (!settings->LaunchHidden) {
+		styles |= WS_VISIBLE;
 	}
 
-	_handle = CreateWindowEx(
-		_settings.ExtendedStyles,
-		_settings.ClassName,
-		_settings.Title,
-		_settings.Styles,
-		_settings.InitialX,
-		_settings.InitialY,
-		_settings.InitialWidth,
-		_settings.InitialHeight,
+	DWORD extendedStyles = settings->ExtendedStyles;
+	if (settings->DragNDropFiles) {
+		extendedStyles |= WS_EX_ACCEPTFILES;
+	}
+	if (settings->IgnoreFocusSwitch) {
+		extendedStyles |= WS_EX_NOACTIVATE;
+	}
+	if (settings->TopMost) {
+		extendedStyles |= WS_EX_TOPMOST;
+	}
+	if (settings->HideInTaskbar) {
+		extendedStyles |= WS_EX_TOOLWINDOW;
+	}
+
+	if (settings->ClassAtom != 0) {
+		className = MAKEINTATOM(settings->ClassAtom);
+	}
+	else {
+		className = settings->ClassName;
+	}
+
+	HWND output = CreateWindowEx(
+		extendedStyles,
+		className,
+		title,
+		styles,
+		initialX,
+		initialY,
+		initialWidth,
+		initialHeight,
 		NULL, // No parent window.
 		NULL, // No target menu.
 		GetModuleHandle(NULL), // Current process instance.
 		NULL // No additional data.
 	);
-	if (_handle == NULL) {
-		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	if (output == NULL) {
+		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	}
+	return output;
+}
+void EzShowWindow(HWND window, int showCommand) {
+	SetLastError(0);
+	ShowWindow(window, showCommand);
+	DWORD lastError = GetLastError();
+	if (lastError != 0) {
+		EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
 	}
 }
-void EZ::Window::Show(int showCommand) {
-	if (GetCurrentThreadId() != _threadID) {
-		throw Error(L"Cross thread GUI access is not allowed.", __FILE__, __LINE__);
+
+BOOL EzMessagePumpOne(HWND window, BOOL wait) {
+	if (EzWindowIsDestroyed(window)) {
+		throw EzError(L"window has been destroyed");
 	}
-	if (IsDestroyed() || IsShowing()) {
-		throw Error(L"Window must not be destroyed or already showing to show window.", __FILE__, __LINE__);
-	}
-	if (_processingMessage) {
-		throw Error(L"Window cannot be shown from inside WndProc.", __FILE__, __LINE__);
-	}
-	ShowWindow(_handle, showCommand);
-	if (GetLastError() != 0) {
-		EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
-}
-BOOL EZ::Window::ProcessOne(BOOL wait) {
-	if (GetCurrentThreadId() != _threadID) {
-		throw Error(L"Cross thread GUI access is not allowed.", __FILE__, __LINE__);
-	}
-	if (!IsShowing()) {
-		throw Error(L"Window must be showing to processing messages.", __FILE__, __LINE__);
-	}
-	if (_processingMessage) {
-		throw Error(L"WndProc cannot be called from inside WndProc.", __FILE__, __LINE__);
-	}
-	_processingMessage = TRUE;
-	BOOL output = FALSE;
-	MSG msg = { };
 	if (wait)
 	{
-		if (GetMessage(&msg, _handle, 0, 0)) {
-			TranslateMessage(&msg);
-			try {
-				DispatchMessage(&msg);
-			}
-			catch (...) {
-				_processingMessage = FALSE;
-				throw;
-			}
-			output = TRUE;
+		MSG message = { };
+		if (GetMessage(&message, window, 0, 0)) {
+			TranslateMessage(&message);
+			DispatchMessage(&message);
 		}
+		return TRUE;
 	}
 	else
 	{
-		if (PeekMessage(&msg, _handle, 0, 0, PM_REMOVE)) {
-			TranslateMessage(&msg);
-			try {
-				DispatchMessage(&msg);
-			}
-			catch (...) {
-				_processingMessage = FALSE;
-				throw;
-			}
-			output = TRUE;
+		MSG message = { };
+		if (PeekMessage(&message, window, 0, 0, PM_REMOVE)) {
+			TranslateMessage(&message);
+			DispatchMessage(&message);
+			return TRUE;
+		}
+		else {
+			return FALSE;
 		}
 	}
-	_processingMessage = FALSE;
-	return output;
 }
-BOOL EZ::Window::ProcessAll() {
-	if (GetCurrentThreadId() != _threadID) {
-		throw Error(L"Cross thread GUI access is not allowed.", __FILE__, __LINE__);
+BOOL EzMessagePumpAll(HWND window) {
+	if (EzWindowIsDestroyed(window)) {
+		throw EzError(L"window has been destroyed");
 	}
-	if (!IsShowing()) {
-		throw Error(L"Window must be showing to processing messages.", __FILE__, __LINE__);
-	}
-	if (_processingMessage) {
-		throw Error(L"WndProc cannot be called from inside WndProc.", __FILE__, __LINE__);
-	}
-	_processingMessage = TRUE;
-
 	BOOL output = FALSE;
-	MSG msg = { };
-	while (!IsDestroyed() && PeekMessage(&msg, _handle, 0, 0, PM_REMOVE)) {
-		TranslateMessage(&msg);
-		try {
-			DispatchMessage(&msg);
-		}
-		catch (...) {
-			_processingMessage = FALSE;
-			throw;
-		}
+	MSG message = { };
+	while (PeekMessage(&message, window, 0, 0, PM_REMOVE)) {
+		TranslateMessage(&message);
+		DispatchMessage(&message);
 		output = TRUE;
 	}
-
-	_processingMessage = FALSE;
 	return output;
 }
-BOOL EZ::Window::Run() {
-	if (GetCurrentThreadId() != _threadID) {
-		throw Error(L"Cross thread GUI access is not allowed.", __FILE__, __LINE__);
+BOOL EzMessagePumpRun(HWND window) {
+	if (EzWindowIsDestroyed(window)) {
+		throw EzError(L"window has been destroyed");
 	}
-	if (!IsShowing()) {
-		throw Error(L"Window must be showing to processing messages.", __FILE__, __LINE__);
-	}
-	if (_processingMessage) {
-		throw Error(L"WndProc cannot be called from inside WndProc.", __FILE__, __LINE__);
-	}
-	_processingMessage = TRUE;
-
 	BOOL output = FALSE;
-	MSG msg = { };
-	while (!IsDestroyed() && GetMessage(&msg, _handle, 0, 0)) {
-		TranslateMessage(&msg);
-		try {
-			DispatchMessage(&msg);
-		}
-		catch (...) {
-			_processingMessage = FALSE;
-			throw;
-		}
+	MSG message = { };
+	while (GetMessage(&message, window, 0, 0)) {
+		TranslateMessage(&message);
+		DispatchMessage(&message);
 		output = TRUE;
 	}
-
-	_processingMessage = FALSE;
 	return output;
 }
-EZ::Window::~Window() {
-	if (GetCurrentThreadId() != _threadID) {
-		throw Error(L"Cross thread GUI access is not allowed.", __FILE__, __LINE__);
+BOOL EzMessagePumpOne(BOOL wait) {
+	if (wait)
+	{
+		MSG message = { };
+		if (GetMessage(&message, NULL, 0, 0)) {
+			TranslateMessage(&message);
+			DispatchMessage(&message);
+		}
+		return TRUE;
 	}
-	if (!IsDestroyed()) {
-		if (!DestroyWindow(_handle)) {
-			EZ::Error::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	else
+	{
+		MSG message = { };
+		if (PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) {
+			TranslateMessage(&message);
+			DispatchMessage(&message);
+			return TRUE;
+		}
+		else {
+			return FALSE;
 		}
 	}
 }
+BOOL EzMessagePumpAll() {
+	BOOL output = FALSE;
+	MSG message = { };
+	while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) {
+		TranslateMessage(&message);
+		DispatchMessage(&message);
+		output = TRUE;
+	}
+	return output;
+}
+void EzMessagePumpRun() {
+	MSG message = { };
+	while (GetMessage(&message, NULL, 0, 0)) {
+		TranslateMessage(&message);
+		DispatchMessage(&message);
+	}
+}
 
-HWND EZ::Window::GetHandle() const {
-	return _handle;
+BOOL EzWindowIsShowing(HWND window) {
+	return !EzWindowIsDestroyed(window) && IsWindowVisible(window);
 }
-EZ::WindowSettings EZ::Window::GetSettings() const {
-	return _settings;
-}
-BOOL EZ::Window::IsShowing() const {
-	return !IsDestroyed() && IsWindowVisible(_handle);
-}
-BOOL EZ::Window::IsDestroyed() const {
-	return !IsWindow(_handle);
+BOOL EzWindowIsDestroyed(HWND window) {
+	return !IsWindow(window);
 }

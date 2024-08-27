@@ -1,8 +1,15 @@
 #pragma once
 #include <Windows.h>
-#include "EZAudioClient.h"
+#include "EzAudioPlayer.h"
 
-extern const UINT32 MysterySong_Length;
+extern const WORD MysterySong_FormatTag;
+extern const WORD MysterySong_ChannelCount;
+extern const DWORD MysterySong_SampleRate;
+extern const DWORD MysterySong_AverageBytesPerSecond;
+extern const WORD MysterySong_BlockAlign;
+extern const WORD MysterySong_BitsPerSample;
+extern const WORD MysterySong_ExtraDataLength;
+extern const BYTE* MysterySong_ExtraData;
+extern const UINT32 MysterySong_BufferLength;
 extern const BYTE MysterySong_Buffer[];
-
-extern const EZ::AudioAsset MysterySong_Asset;
+extern const EzAudioAsset MysterySong_Asset;
