@@ -43,7 +43,7 @@ public:
 
 private:
 	LPWSTR _message = NULL;
-	DWORD _errorCode;
-	HRESULT _hr;
-	NTSTATUS _nt;
+	DWORD _errorCode = 0;
+	HRESULT _hr = 0;
+	NTSTATUS _nt = 0;
 };

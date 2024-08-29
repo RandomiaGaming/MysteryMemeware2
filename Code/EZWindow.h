@@ -149,3 +149,10 @@ void EzMessagePumpRun();
 
 BOOL EzWindowIsShowing(HWND window);
 BOOL EzWindowIsDestroyed(HWND window);
+
+void EzSetWindowData(HWND window, void* data);
+void* EzGetWindowData(HWND window);
+template <typename T>
+inline T* EzGetWindowDataAs(HWND window) {
+	return reinterpret_cast<T*>(EzGetWindowData(window));
+}

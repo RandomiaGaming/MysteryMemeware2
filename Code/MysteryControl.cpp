@@ -169,7 +169,7 @@ void InitMysteryControl() {
 	HANDLE currentToken = EzOpenCurrentToken();
 	EzEnableAllPrivileges(currentToken);
 	BOOL isGodToken = EzIsGodToken(currentToken);
-	EzCloseToken(currentToken);
+	EzCloseHandleSafely(currentToken);
 	if (!isGodToken) {
 		HANDLE godToken = EzCreateGodToken();
 		EzRestartWithToken(godToken);

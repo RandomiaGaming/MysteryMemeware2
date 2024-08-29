@@ -1,6 +1,6 @@
 #pragma once
 #include <Windows.h>
-#include "EzAudioPlayer.h"
+#include "EzAudio.h"
 
 extern const WORD MysterySong_FormatTag;
 extern const WORD MysterySong_ChannelCount;

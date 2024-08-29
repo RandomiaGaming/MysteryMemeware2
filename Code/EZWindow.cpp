@@ -18,6 +18,7 @@ ATOM EzRegisterClass(const EzClassSettings* settings) {
 	// NULL tells windows to use the default icon so no need to explicitly set it.
 	wc.hIcon = settings->Icon;
 	if (settings->Cursor == NULL) {
+		// No need to free cursors as they are reused across the application instead of being copied for each call to LoadCursor.
 		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 		if (wc.hCursor == NULL) {
 			EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
@@ -27,6 +28,7 @@ ATOM EzRegisterClass(const EzClassSettings* settings) {
 		wc.hCursor = settings->Cursor;
 	}
 	if (!settings->CustomBackPaint) {
+		// No need to free this brush in normal circumstances because UnregisterClass will free it.
 		wc.hbrBackground = CreateSolidBrush(RGB(settings->BackColorR, settings->BackColorG, settings->BackColorB));
 		if (wc.hbrBackground == NULL) {
 			EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
@@ -59,6 +61,7 @@ ATOM EzRegisterClass(const EzClassSettings* settings) {
 	wc.cbWndExtra = 0; // Allocate 0 extra bytes after windows of this class.
 	wc.hInstance = GetModuleHandle(NULL); // WndProc is in the current hInstance.
 	if (wc.hInstance == NULL) {
+		DeleteObject(wc.hbrBackground);
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 	wc.lpszMenuName = NULL; // Windows of this class have no default menu.
@@ -67,6 +70,7 @@ ATOM EzRegisterClass(const EzClassSettings* settings) {
 	if (output == 0) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
+
 	return output;
 }
 
@@ -270,4 +274,30 @@ BOOL EzWindowIsShowing(HWND window) {
 }
 BOOL EzWindowIsDestroyed(HWND window) {
 	return !IsWindow(window);
+}
+
+void EzSetWindowData(HWND window, void* data) {
+	DWORD lastError = 0;
+
+	SetLastError(0);
+	if (SetWindowLongPtr(window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(data)) == 0) {
+		lastError = GetLastError();
+		if (lastError != 0) {
+			EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
+		}
+	}
+}
+void* EzGetWindowData(HWND window) {
+	DWORD lastError = 0;
+
+	SetLastError(0);
+	LONG_PTR userData = GetWindowLongPtr(window, GWLP_USERDATA);
+	if (userData == 0) {
+		lastError = GetLastError();
+		if (lastError != 0) {
+			EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
+		}
+	}
+
+	return reinterpret_cast<void*>(userData);
 }

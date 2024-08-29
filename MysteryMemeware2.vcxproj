@@ -20,8 +20,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\CoverImage.h" />
-    <ClInclude Include="Code\EzAudioPlayer.h" />
+    <ClInclude Include="Code\EzAudio.h" />
     <ClInclude Include="Code\EzError.h" />
+    <ClInclude Include="Code\EzLL.h" />
     <ClInclude Include="Code\EzRenderer.h" />
     <ClInclude Include="Code\EzTokens.h" />
     <ClInclude Include="Code\EzWindow.h" />
@@ -33,8 +34,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\CoverImage.cpp" />
-    <ClCompile Include="Code\EzAudioPlayer.cpp" />
+    <ClCompile Include="Code\EzAudio.cpp" />
     <ClCompile Include="Code\EzError.cpp" />
+    <ClCompile Include="Code\EzLL.cpp" />
     <ClCompile Include="Code\EZRenderer.cpp" />
     <ClCompile Include="Code\EzTokens.cpp" />
     <ClCompile Include="Code\EzWindow.cpp" />

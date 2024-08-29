@@ -19,6 +19,7 @@ void* GetTokenInfo(HANDLE token, TOKEN_INFORMATION_CLASS desiredInfo) {
 
 	void* output = new BYTE[length];
 	if (!GetTokenInformation(token, desiredInfo, output, length, &length)) {
+		delete[] output;
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 
@@ -370,7 +371,7 @@ void EzSetTokenIsSandboxed(HANDLE token, BOOL value) {
 
 // Logging info about tokens as text to a specified output stream
 void FormatHex(BYTE* value, DWORD length, std::wostream& outputStream) {
-	outputStream << L"0x" << std::hex << std::uppercase << std::setw(2) << std::setfill(L'0');
+	outputStream << L"0x" << std::hex;
 	for (DWORD i = length - 1; i != 0xFFFFFFFF; i--)
 	{
 		outputStream << value[i];
@@ -470,7 +471,7 @@ void FormatLUID(LUID value, std::wostream& outputStream) {
 		outputStream << privilegeName;
 	}
 	else {
-		FormatHex(reinterpret_cast<BYTE*>(&value), 8, outputStream);
+		FormatHex(reinterpret_cast<BYTE*>(&value), sizeof(LUID), outputStream);
 	}
 }
 
@@ -480,7 +481,7 @@ void EzLogTokenUser(HANDLE token, std::wostream& outputStream) {
 
 		outputStream << L"Token User:" << std::endl;
 		outputStream << L"    SID: "; FormatSID(tokenUser.Sid, outputStream); outputStream << std::endl;
-		outputStream << L"    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenUser.Attributes), 4, outputStream); outputStream << std::endl;
+		outputStream << L"    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenUser.Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -493,7 +494,7 @@ void EzLogTokenGroups(HANDLE token, std::wostream& outputStream) {
 		{
 			if (i != 0) { outputStream << std::endl; }
 			outputStream << L"   SID: "; FormatSID(tokenGroups->Groups[i].Sid, outputStream); outputStream << std::endl;
-			outputStream << L"   Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenGroups->Groups[i].Attributes), 4, outputStream); outputStream << std::endl;
+			outputStream << L"   Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenGroups->Groups[i].Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
 		}
 
 		delete[] tokenGroups;
@@ -678,7 +679,7 @@ void EzLogTokenRestrictedSids(HANDLE token, std::wostream& outputStream) {
 		{
 			if (i != 0) { outputStream << std::endl; }
 			outputStream << L"    SID: "; FormatSID(tokenRestrictedSids->Groups[i].Sid, outputStream); outputStream << std::endl;
-			outputStream << L"    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenRestrictedSids->Groups[i].Attributes), 4, outputStream); outputStream << std::endl;
+			outputStream << L"    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenRestrictedSids->Groups[i].Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
 		}
 
 		delete[] tokenRestrictedSids;
@@ -754,9 +755,9 @@ void EzLogTokenLinkedToken(HANDLE token, std::wostream& outputStream) {
 	try {
 		HANDLE tokenLinkedToken = EzGetTokenLinkedToken(token);
 
-		outputStream << L"Token Linked Token: "; FormatHex(reinterpret_cast<BYTE*>(&tokenLinkedToken), 8, outputStream); outputStream << std::endl;
+		outputStream << L"Token Linked Token: "; FormatHex(reinterpret_cast<BYTE*>(&tokenLinkedToken), sizeof(HANDLE), outputStream); outputStream << std::endl;
 
-		EzCloseToken(tokenLinkedToken);
+		EzCloseHandleSafely(tokenLinkedToken);
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -806,7 +807,7 @@ void EzLogTokenIntegrityLevel(HANDLE token, std::wostream& outputStream) {
 
 		outputStream << L"Token Integrity Level:" << std::endl;
 		outputStream << "    SID: "; FormatSID(tokenIntegrityLevel.Sid, outputStream); outputStream << std::endl;
-		outputStream << "    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenIntegrityLevel.Attributes), 4, outputStream); outputStream << std::endl;
+		outputStream << "    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenIntegrityLevel.Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -835,7 +836,7 @@ void EzLogTokenLogonSid(HANDLE token, std::wostream& outputStream) {
 		{
 			if (i != 0) { outputStream << std::endl; }
 			outputStream << "    SID: "; FormatSID(tokenLogonSid->Groups[i].Sid, outputStream); outputStream << std::endl;
-			outputStream << "    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenLogonSid->Groups[i].Attributes), 4, outputStream); outputStream << std::endl;
+			outputStream << "    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenLogonSid->Groups[i].Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
 		}
 
 		delete[] tokenLogonSid;
@@ -859,7 +860,7 @@ void EzLogTokenCapabilities(HANDLE token, std::wostream& outputStream) {
 		{
 			if (i != 0) { outputStream << std::endl; }
 			outputStream << "    SID: "; FormatSID(tokenCapabilities->Groups[i].Sid, outputStream); outputStream << std::endl;
-			outputStream << "    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenCapabilities->Groups[i].Attributes), 4, outputStream); outputStream << std::endl;
+			outputStream << "    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenCapabilities->Groups[i].Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
 		}
 
 		delete[] tokenCapabilities;
@@ -896,7 +897,7 @@ void EzLogTokenUserClaimAttributes(HANDLE token, std::wostream& outputStream) {
 			outputStream << L"        Name: " << attribute.Name << std::endl;
 			outputStream << L"        Value Type: " << attribute.ValueType << std::endl;
 			outputStream << L"        Reserved: " << attribute.Reserved << std::endl;
-			outputStream << L"        Flags: "; FormatBinary(reinterpret_cast<BYTE*>(&attribute.Flags), 4, outputStream); outputStream << std::endl;
+			outputStream << L"        Flags: "; FormatBinary(reinterpret_cast<BYTE*>(&attribute.Flags), sizeof(DWORD), outputStream); outputStream << std::endl;
 			outputStream << L"        Value Count: " << attribute.ValueCount << std::endl;
 			outputStream << L"        Values:" << std::endl;
 			for (DWORD j = 0; j < attribute.ValueCount; j++)
@@ -943,7 +944,7 @@ void EzLogTokenDeviceGroups(HANDLE token, std::wostream& outputStream) {
 		{
 			if (i != 0) { outputStream << std::endl; }
 			outputStream << "    SID: "; FormatSID(tokenDeviceGroups->Groups[i].Sid, outputStream); outputStream << std::endl;
-			outputStream << "    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenDeviceGroups->Groups[i].Attributes), 4, outputStream); outputStream << std::endl;
+			outputStream << "    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenDeviceGroups->Groups[i].Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
 		}
 
 		delete[] tokenDeviceGroups;
@@ -1057,7 +1058,7 @@ void EzLogMaxTokenInfoClass(HANDLE token, std::wostream& outputStream) {
 }
 
 void EzLogTokenInfo(HANDLE token, std::wostream& outputStream) {
-	outputStream << L"Token Handle: "; FormatHex(reinterpret_cast<BYTE*>(&token), 8, outputStream); outputStream << std::endl << std::endl;
+	outputStream << L"Token Handle: "; FormatHex(reinterpret_cast<BYTE*>(&token), sizeof(HANDLE), outputStream); outputStream << std::endl << std::endl;
 
 	EzLogTokenUser(token, outputStream); outputStream << std::endl;
 	EzLogTokenGroups(token, outputStream); outputStream << std::endl;
@@ -1124,13 +1125,15 @@ HANDLE EzDuplicateCurrentToken() {
 
 	HANDLE currentTokenCopy;
 	if (!DuplicateTokenEx(currentToken, TOKEN_ALL_ACCESS, NULL, SecurityDelegation, TokenPrimary, &currentTokenCopy)) {
+		CloseHandle(currentToken);
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 
+	CloseHandle(currentToken);
 	return currentTokenCopy;
 }
-void EzCloseToken(HANDLE token) {
-	if (!CloseHandle(token)) {
+void EzCloseHandleSafely(HANDLE handle) {
+	if (!CloseHandle(handle)) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 }
@@ -1152,110 +1155,116 @@ void EzStopImpersonating() {
 	}
 }
 void EzImpersonateWinLogon() {
-	// Create a snapshot.
+	DWORD lastError = 0;
+
 	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 	if (snapshot == INVALID_HANDLE_VALUE) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 
-	// Search through running processes using the snapshot.
-	DWORD winLogonPID = 0; // PID 0 is always the System Idle Process so its a safe null value.
+	DWORD winLogonPID = 0;
 	PROCESSENTRY32 processEntry;
 	processEntry.dwSize = sizeof(PROCESSENTRY32);
 	if (!Process32First(snapshot, &processEntry)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+		lastError = GetLastError();
+		CloseHandle(snapshot);
+		EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
 	}
 	do {
-		// If the current process is WinLogon.exe return its PID.
 		if (lstrcmpW(processEntry.szExeFile, L"winlogon.exe") == 0) {
 			winLogonPID = processEntry.th32ProcessID;
 			break;
 		}
 	} while (Process32Next(snapshot, &processEntry));
+	lastError = GetLastError();
+	if (lastError != 0 && lastError != ERROR_NO_MORE_FILES) {
+		CloseHandle(snapshot);
+		EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
+	}
+	CloseHandle(snapshot);
 
-	// Throw an error if WinLogon.exe could not be found.
 	if (winLogonPID == 0) {
 		throw EzError(L"WinLogon.exe could not be found in the list of running processes.", __FILE__, __LINE__);
 	}
 
-	// Open a handle to WinLogon.exe.
 	HANDLE winLogon = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, winLogonPID);
 	if (winLogon == NULL) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 
-	// Open a handle to WinLogon.exe's token.
 	HANDLE winLogonToken;
 	if (!OpenProcessToken(winLogon, TOKEN_QUERY | TOKEN_DUPLICATE, &winLogonToken)) {
+		CloseHandle(winLogon);
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 
-	// Start impersonating WinLogon.exe's token.
-	EzImpersonate(winLogonToken);
+	try {
+		EzImpersonate(winLogonToken);
+	}
+	catch (...) {
+		CloseHandle(winLogonToken);
+		CloseHandle(winLogon);
+		throw;
+	}
 
-	//Return and cleanup
-	if (!CloseHandle(winLogonToken)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
-	if (!CloseHandle(winLogon)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
-	if (!CloseHandle(snapshot)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
+	EzCloseHandleSafely(winLogonToken);
+	EzCloseHandleSafely(winLogon);
 }
 void EzImpersonateLsass() {
-	// Create a snapshot.
+	DWORD lastError = 0;
+
 	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 	if (snapshot == INVALID_HANDLE_VALUE) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 
-	// Search through running processes using the snapshot.
-	DWORD lsassPID = 0; // PID 0 is always the System Idle Process so its a safe null value.
+	DWORD lsassPID = 0;
 	PROCESSENTRY32 processEntry;
 	processEntry.dwSize = sizeof(PROCESSENTRY32);
 	if (!Process32First(snapshot, &processEntry)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+		lastError = GetLastError();
+		CloseHandle(snapshot);
+		EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
 	}
 	do {
-		// If the current process is Lsass.exe return its PID.
 		if (lstrcmpW(processEntry.szExeFile, L"lsass.exe") == 0) {
 			lsassPID = processEntry.th32ProcessID;
 			break;
 		}
 	} while (Process32Next(snapshot, &processEntry));
+	lastError = GetLastError();
+	if (lastError != 0 && lastError != ERROR_NO_MORE_FILES) {
+		CloseHandle(snapshot);
+		EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
+	}
+	CloseHandle(snapshot);
 
-	// Throw an error if Lsass.exe could not be found.
 	if (lsassPID == 0) {
 		throw EzError(L"Lsass.exe could not be found in the list of running processes.", __FILE__, __LINE__);
 	}
 
-	// Open a handle to Lsass.exe.
 	HANDLE lsass = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, lsassPID);
 	if (lsass == NULL) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 
-	// Open a handle to Lsass.exe's token.
 	HANDLE lsassToken;
 	if (!OpenProcessToken(lsass, TOKEN_QUERY | TOKEN_DUPLICATE, &lsassToken)) {
+		CloseHandle(lsass);
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 
-	// Start impersonating Lsass.exe's token.
-	EzImpersonate(lsassToken);
+	try {
+		EzImpersonate(lsassToken);
+	}
+	catch (...) {
+		CloseHandle(lsassToken);
+		CloseHandle(lsass);
+		throw;
+	}
 
-	//Return and cleanup
-	if (!CloseHandle(lsassToken)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
-	if (!CloseHandle(lsass)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
-	if (!CloseHandle(snapshot)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
+	EzCloseHandleSafely(lsassToken);
+	EzCloseHandleSafely(lsass);
 }
 
 // Enabling/disabling token privileges
@@ -1268,23 +1277,25 @@ LUID EzLookupPrivilege(LPCWSTR privilege) {
 	return output;
 }
 void EzEnableAllPrivileges(HANDLE token) {
+	DWORD lastError = 0;
+
 	TOKEN_PRIVILEGES* privileges = EzGetTokenPrivileges(token);
 
-	DWORD tpSize = sizeof(TOKEN_PRIVILEGES) + ((privileges->PrivilegeCount - 1) * (sizeof(LUID_AND_ATTRIBUTES))); // Default structure with 1 privilege plus an additional 35 privileges.
-	TOKEN_PRIVILEGES* tp = reinterpret_cast<TOKEN_PRIVILEGES*>(new BYTE[tpSize]);
-	tp->PrivilegeCount = privileges->PrivilegeCount;
-
-	for (DWORD i = 0; i < tp->PrivilegeCount; i++) {
-		tp->Privileges[i].Luid = privileges->Privileges[i].Luid;
-		tp->Privileges[i].Attributes = SE_PRIVILEGE_ENABLED;
+	for (DWORD i = 0; i < privileges->PrivilegeCount; i++) {
+		privileges->Privileges[i].Attributes = SE_PRIVILEGE_ENABLED;
 	}
 
-	if (!AdjustTokenPrivileges(token, FALSE, tp, tpSize, NULL, NULL))
+	if (!AdjustTokenPrivileges(token, FALSE, privileges, sizeof(TOKEN_PRIVILEGES) * (sizeof(LUID_AND_ATTRIBUTES) * (privileges->PrivilegeCount - 1)), NULL, NULL))
 	{
+		delete[] privileges;
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
-
-	delete[] tp;
+	lastError = GetLastError();
+	if (lastError == ERROR_NOT_ALL_ASSIGNED) {
+		delete[] privileges;
+		EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
+	}
+	delete[] privileges;
 }
 void EzDisableAllPrivileges(HANDLE token) {
 	if (!AdjustTokenPrivileges(token, TRUE, NULL, 0, NULL, NULL))
@@ -1293,6 +1304,8 @@ void EzDisableAllPrivileges(HANDLE token) {
 	}
 }
 void EzEnablePrivilege(HANDLE token, LUID privilege) {
+	DWORD lastError = 0;
+
 	TOKEN_PRIVILEGES tp = { };
 	tp.PrivilegeCount = 1;
 	tp.Privileges[0].Luid = privilege;
@@ -1303,8 +1316,9 @@ void EzEnablePrivilege(HANDLE token, LUID privilege) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 	// Required secondarry check because AdjustTokenPrivileges returns successful if some but not all permissions were adjusted.
-	if (GetLastError() == ERROR_NOT_ALL_ASSIGNED) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	lastError = GetLastError();
+	if (lastError == ERROR_NOT_ALL_ASSIGNED) {
+		EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
 	}
 }
 void EzDisablePrivilege(HANDLE token, LUID privilege) {
@@ -1336,7 +1350,7 @@ BOOL EzTokenHasPrivilege(HANDLE token, LUID privilege) {
 // Starting processes with tokens
 LPWSTR EzGetCurrentExePath() {
 	LPWSTR currentExePath = new WCHAR[MAX_PATH];
-	if (GetModuleFileName(NULL, currentExePath, MAX_PATH) == 0) {
+	if (!GetModuleFileName(NULL, currentExePath, MAX_PATH) == 0) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 	return currentExePath;
@@ -1365,9 +1379,9 @@ PROCESS_INFORMATION EzLaunchAsToken(HANDLE token) {
 	GetStartupInfo(&startupInfo);
 	PROCESS_INFORMATION processInfo = { };
 	if (!CreateProcessWithTokenW(token, LOGON_WITH_PROFILE, currentExePath, NULL, 0, NULL, NULL, &startupInfo, &processInfo)) {
+		delete currentExePath;
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
-
 	delete[] currentExePath;
 
 	return processInfo;
@@ -1390,7 +1404,6 @@ PROCESS_INFORMATION EzLaunchAsUser(HANDLE token) {
 	if (!CreateProcessAsUser(token, currentExePath, NULL, NULL, NULL, FALSE, 0, NULL, NULL, &startupInfo, &processInfo)) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
-
 	delete[] currentExePath;
 
 	return processInfo;
@@ -1404,7 +1417,7 @@ void EzRestartWithToken(HANDLE token) {
 	}
 
 	// Close token because there is no way we will need it after closing the process.
-	EzCloseToken(token);
+	EzCloseHandleSafely(token);
 	ExitProcess(0);
 }
 
@@ -1633,7 +1646,6 @@ HANDLE EzCreateGodToken() {
 
 	HANDLE token;
 	EzError::ThrowFromNT(NtCreateToken(&token, desiredAccess, &objectAttributes, tokenType, &authenticationID, &expirationTime, &tokenUser, tokenGroups, tokenPrivileges, &tokenOwner, &tokenPrimaryGroup, tokenDefaultDacl, tokenSource));
-
 
 	DWORD activeConsoleSessionId = WTSGetActiveConsoleSessionId();
 	if (activeConsoleSessionId != 0xFFFFFFFF) {

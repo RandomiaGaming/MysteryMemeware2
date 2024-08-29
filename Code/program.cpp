@@ -3,24 +3,30 @@
 #include "MysteryControl.h"
 #include "MysteryAudio.h"
 #include "MysteryGraphics.h"
+#include "EzLL.h"
+#include <iostream>
 
 BOOL QuitRequested = FALSE;
 
 int main() {
 	try {
-		EzError::ThrowFromHR(CoInitializeEx(NULL, COINIT_SPEED_OVER_MEMORY));
+		HRESULT hr = 0;
+		hr = CoInitializeEx(NULL, COINIT_SPEED_OVER_MEMORY);
+		if (FAILED(hr)) {
+			EzError::ThrowFromHR(hr, __FILE__, __LINE__);
+		}
 
 		//InitMysteryControl();
 		InitMysteryAudio();
-		//InitMysteryGraphics();
+		InitMysteryGraphics();
 
 		while (!QuitRequested) {
 			//UpdateMysteryControl();
 			UpdateMysteryAudio();
-			//UpdateMysteryGraphics();
+			UpdateMysteryGraphics();
 		}
 
-		//FreeMysteryGraphics();
+		FreeMysteryGraphics();
 		FreeMysteryAudio();
 		//FreeMysteryControl();
 
