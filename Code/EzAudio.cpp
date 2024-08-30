@@ -22,7 +22,7 @@ exclusive mode if the hardware does not support it.
 #pragma comment(lib, "wmcodecdspuuid.lib")
 
 // Better version of IsFormatSupported
-HRESULT EzAudioClientSupportsFormat(IAudioClient* client, const WAVEFORMATEX* format, BOOL exclusive, BOOL* pIsSupported) {
+BOOL EzAudioClientSupportsFormat(IAudioClient* client, const WAVEFORMATEX* format, BOOL exclusive) {
 	HRESULT hr = 0;
 
 	if (exclusive) {
@@ -37,18 +37,14 @@ HRESULT EzAudioClientSupportsFormat(IAudioClient* client, const WAVEFORMATEX* fo
 	}
 
 	if (hr == S_OK) {
-		if (pIsSupported != NULL) {
-			*pIsSupported = TRUE;
-		}
-		return S_OK;
+		return TRUE;
 	}
-	if (hr == S_FALSE || hr == AUDCLNT_E_UNSUPPORTED_FORMAT) {
-		if (pIsSupported != NULL) {
-			*pIsSupported = FALSE;
-		}
-		return S_OK;
+	else if (hr == S_FALSE || hr == AUDCLNT_E_UNSUPPORTED_FORMAT) {
+		return FALSE;
 	}
-	return hr;
+	else {
+		EzError::ThrowFromHR(hr, __FILE__, __LINE__);
+	}
 }
 
 // Devices and DeviceEnumerators
@@ -208,12 +204,7 @@ WAVEFORMATEX* EzAudioGetDeviceFormat(IAudioClient* client) {
 				format->nBlockAlign = (format->wBitsPerSample * format->nChannels) / 8;
 				format->nAvgBytesPerSec = format->nSamplesPerSec * format->nBlockAlign;
 
-				hr = EzAudioClientSupportsFormat(client, format, TRUE, &supported);
-				if (FAILED(hr)) {
-					delete[] format;
-					EzError::ThrowFromHR(hr, __FILE__, __LINE__);
-				}
-				if (supported) {
+				if (EzAudioClientSupportsFormat(client, format, TRUE)) {
 					goto foundSupportedFormat;
 				}
 			}

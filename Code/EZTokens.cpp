@@ -1,16 +1,35 @@
 // GOOD ENOUGH
 #include "EzTokens.h"
 #include "EzError.h"
+#include "EzHelper.h"
 #include <sddl.h>
 #include <tlhelp32.h>
-#include <iomanip>
+
 #pragma comment(lib, "Advapi32.lib")
 
 // Collapse All: Ctrl+M+O
 // Toggle Collapse: Ctrl+M+L
 
+// Missing ANSI version of CreateProcessWithToken fix
+_Must_inspect_result_ BOOL WINAPI
+CreateProcessWithTokenA(
+	_In_        HANDLE hToken,
+	_In_        DWORD dwLogonFlags,
+	_In_opt_    LPCSTR lpApplicationName,
+	_Inout_opt_ LPSTR lpCommandLine,
+	_In_        DWORD dwCreationFlags,
+	_In_opt_    LPVOID lpEnvironment,
+	_In_opt_    LPCSTR lpCurrentDirectory,
+	_In_        LPSTARTUPINFOA lpStartupInfo,
+	_Out_       LPPROCESS_INFORMATION lpProcessInformation
+) {
+
+
+	return CreateProcessWithTokenW(hToken, dwLogonFlags, lpApplicationName, lpCommandLine, dwCreationFlags, lpEnvironment, lpCurrentDirectory, lpStartupInfo, lpProcessInformation);
+}
+
 // Getting info about tokens
-void* GetTokenInfo(HANDLE token, TOKEN_INFORMATION_CLASS desiredInfo) {
+static void* GetTokenInfo(HANDLE token, TOKEN_INFORMATION_CLASS desiredInfo) {
 	DWORD length = 0;
 	GetTokenInformation(token, desiredInfo, NULL, 0, &length);
 	if (length == 0) {
@@ -238,7 +257,7 @@ BOOL EzGetTokenIsSandboxed(HANDLE token) {
 }
 
 // Setting info about tokens
-void SetTokenInfo(HANDLE token, TOKEN_INFORMATION_CLASS targetClass, void* newInfo, DWORD newInfoLength) {
+static void SetTokenInfo(HANDLE token, TOKEN_INFORMATION_CLASS targetClass, void* newInfo, DWORD newInfoLength) {
 	if (!SetTokenInformation(token, targetClass, newInfo, newInfoLength)) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
@@ -370,118 +389,13 @@ void EzSetTokenIsSandboxed(HANDLE token, BOOL value) {
 
 
 // Logging info about tokens as text to a specified output stream
-void FormatHex(BYTE* value, DWORD length, std::wostream& outputStream) {
-	outputStream << L"0x" << std::hex;
-	for (DWORD i = length - 1; i != 0xFFFFFFFF; i--)
-	{
-		outputStream << value[i];
-	}
-	outputStream << std::dec;
-}
-void FormatBinary(BYTE* value, DWORD length, std::wostream& outputStream) {
-	for (DWORD i = 0; i < length; i++)
-	{
-		if (i != 0) { outputStream << L" "; }
-		if ((value[i] & 128) == 0) { outputStream << L"0"; }
-		else { outputStream << L"1"; }
-		if ((value[i] & 64) == 0) { outputStream << L"0"; }
-		else { outputStream << L"1"; }
-		if ((value[i] & 32) == 0) { outputStream << L"0"; }
-		else { outputStream << L"1"; }
-		if ((value[i] & 16) == 0) { outputStream << L"0"; }
-		else { outputStream << L"1"; }
-		if ((value[i] & 8) == 0) { outputStream << L"0"; }
-		else { outputStream << L"1"; }
-		if ((value[i] & 4) == 0) { outputStream << L"0"; }
-		else { outputStream << L"1"; }
-		if ((value[i] & 2) == 0) { outputStream << L"0"; }
-		else { outputStream << L"1"; }
-		if ((value[i] & 1) == 0) { outputStream << L"0"; }
-		else { outputStream << L"1"; }
-	}
-}
-void FormatBool(BOOL value, std::wostream& outputStream) {
-	if (value) {
-		outputStream << L"True";
-	}
-	else {
-		outputStream << L"False";
-	}
-}
-void FormatSID(PSID value, std::wostream& outputStream) {
-	TCHAR name[256];
-	TCHAR domain[256];
-	DWORD nameLen = sizeof(name) / sizeof(TCHAR);
-	DWORD domainLen = sizeof(domain) / sizeof(TCHAR);
-	SID_NAME_USE sidType;
-	BOOL valid = LookupAccountSid(NULL, value, name, &nameLen, domain, &domainLen, &sidType);
-
-	if (valid) {
-		if (domainLen != 0)
-		{
-			outputStream << domain << L"/";
-		}
-		outputStream << name;
-	}
-	else {
-		sidType = SidTypeInvalid;
-	}
-
-	switch (sidType) {
-	case SidTypeUser:
-		outputStream << L" (User)";
-		break;
-	case SidTypeGroup:
-		outputStream << L" (Group)";
-		break;
-	case SidTypeDomain:
-		outputStream << L" (Domain)";
-		break;
-	case SidTypeAlias:
-		outputStream << L" (Alias)";
-		break;
-	case SidTypeWellKnownGroup:
-		outputStream << L" (Well Known Group)";
-		break;
-	case SidTypeDeletedAccount:
-		outputStream << L" (Deleted Account)";
-		break;
-	case SidTypeComputer:
-		outputStream << L" (Computer)";
-		break;
-	case SidTypeLabel:
-		outputStream << L" (Label)";
-		break;
-	case SidTypeLogonSession:
-		outputStream << L" (Logon Session)";
-		break;
-	case SidTypeInvalid:
-	case SidTypeUnknown:
-	default:
-		if (value == 0) { outputStream << L"Null SID"; }
-		else { outputStream << L"Invalid/Unknown SID"; }
-		break;
-	}
-}
-void FormatLUID(LUID value, std::wostream& outputStream) {
-	WCHAR privilegeName[256];
-	DWORD nameLen = sizeof(privilegeName) / sizeof(privilegeName[0]);
-
-	if (LookupPrivilegeName(NULL, &value, privilegeName, &nameLen)) {
-		outputStream << privilegeName;
-	}
-	else {
-		FormatHex(reinterpret_cast<BYTE*>(&value), sizeof(LUID), outputStream);
-	}
-}
-
 void EzLogTokenUser(HANDLE token, std::wostream& outputStream) {
 	try {
 		SID_AND_ATTRIBUTES tokenUser = EzGetTokenUser(token);
 
 		outputStream << L"Token User:" << std::endl;
-		outputStream << L"    SID: "; FormatSID(tokenUser.Sid, outputStream); outputStream << std::endl;
-		outputStream << L"    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenUser.Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
+		outputStream << L"    SID: "; EzPrintSid(tokenUser.Sid, outputStream); outputStream << std::endl;
+		outputStream << L"    Attributes: "; EzPrintBinary(reinterpret_cast<BYTE*>(&tokenUser.Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -493,8 +407,8 @@ void EzLogTokenGroups(HANDLE token, std::wostream& outputStream) {
 		for (DWORD i = 0; i < tokenGroups->GroupCount; i++)
 		{
 			if (i != 0) { outputStream << std::endl; }
-			outputStream << L"   SID: "; FormatSID(tokenGroups->Groups[i].Sid, outputStream); outputStream << std::endl;
-			outputStream << L"   Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenGroups->Groups[i].Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
+			outputStream << L"   SID: "; EzPrintSid(tokenGroups->Groups[i].Sid, outputStream); outputStream << std::endl;
+			outputStream << L"   Attributes: "; EzPrintBinary(reinterpret_cast<BYTE*>(&tokenGroups->Groups[i].Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
 		}
 
 		delete[] tokenGroups;
@@ -509,8 +423,8 @@ void EzLogTokenPrivileges(HANDLE token, std::wostream& outputStream) {
 		for (DWORD i = 0; i < tokenPrivileges->PrivilegeCount; i++)
 		{
 			if (i != 0) { outputStream << std::endl; }
-			outputStream << "    LUID: "; FormatLUID(tokenPrivileges->Privileges[i].Luid, outputStream); outputStream << std::endl;
-			outputStream << "    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenPrivileges->Privileges[i].Attributes), 4, outputStream); outputStream << std::endl;
+			outputStream << L"    LUID: "; EzPrintLuid(tokenPrivileges->Privileges[i].Luid, outputStream); outputStream << std::endl;
+			outputStream << L"    Attributes: "; EzPrintBinary(reinterpret_cast<BYTE*>(&tokenPrivileges->Privileges[i].Attributes), 4, outputStream); outputStream << std::endl;
 		}
 
 		delete[] tokenPrivileges;
@@ -521,7 +435,7 @@ void EzLogTokenOwner(HANDLE token, std::wostream& outputStream) {
 	try {
 		PSID tokenOwner = EzGetTokenOwner(token);
 
-		outputStream << L"Token Owner: "; FormatSID(tokenOwner, outputStream); outputStream << std::endl;
+		outputStream << L"Token Owner: "; EzPrintSid(tokenOwner, outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -529,7 +443,7 @@ void EzLogTokenPrimaryGroup(HANDLE token, std::wostream& outputStream) {
 	try {
 		PSID tokenPrimaryGroup = EzGetTokenPrimaryGroup(token);
 
-		outputStream << L"Token Primary Group: "; FormatSID(tokenPrimaryGroup, outputStream); outputStream << std::endl;
+		outputStream << L"Token Primary Group: "; EzPrintSid(tokenPrimaryGroup, outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -570,7 +484,7 @@ void EzLogTokenSource(HANDLE token, std::wostream& outputStream) {
 
 		outputStream << L"Token Source:" << std::endl;
 		outputStream << L"    Name: " << safeSourceName << std::endl;
-		outputStream << L"    Identifier: "; FormatLUID(tokenSource.SourceIdentifier, outputStream); outputStream << std::endl;
+		outputStream << L"    Identifier: "; EzPrintLuid(tokenSource.SourceIdentifier, outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -627,8 +541,8 @@ void EzLogTokenStatistics(HANDLE token, std::wostream& outputStream) {
 		TOKEN_STATISTICS tokenStatistics = EzGetTokenStatistics(token);
 
 		outputStream << L"Token Statistics:" << std::endl;
-		outputStream << L"    Token ID: "; FormatLUID(tokenStatistics.TokenId, outputStream); outputStream << std::endl;
-		outputStream << L"    Authentication ID: "; FormatLUID(tokenStatistics.AuthenticationId, outputStream); outputStream << std::endl;
+		outputStream << L"    Token ID: "; EzPrintLuid(tokenStatistics.TokenId, outputStream); outputStream << std::endl;
+		outputStream << L"    Authentication ID: "; EzPrintLuid(tokenStatistics.AuthenticationId, outputStream); outputStream << std::endl;
 		outputStream << L"    Token Type: ";
 		if (tokenStatistics.TokenType == TokenPrimary) {
 			outputStream << L"Primary";
@@ -666,7 +580,7 @@ void EzLogTokenStatistics(HANDLE token, std::wostream& outputStream) {
 		outputStream << L"    Dynamic Available: " << tokenStatistics.DynamicAvailable << std::endl;
 		outputStream << L"    Group Count: " << tokenStatistics.GroupCount << std::endl;
 		outputStream << L"    Privilege Count: " << tokenStatistics.PrivilegeCount << std::endl;
-		outputStream << L"    Modified ID: "; FormatLUID(tokenStatistics.ModifiedId, outputStream); outputStream << std::endl;
+		outputStream << L"    Modified ID: "; EzPrintLuid(tokenStatistics.ModifiedId, outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -678,8 +592,8 @@ void EzLogTokenRestrictedSids(HANDLE token, std::wostream& outputStream) {
 		for (DWORD i = 0; i < tokenRestrictedSids->GroupCount; i++)
 		{
 			if (i != 0) { outputStream << std::endl; }
-			outputStream << L"    SID: "; FormatSID(tokenRestrictedSids->Groups[i].Sid, outputStream); outputStream << std::endl;
-			outputStream << L"    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenRestrictedSids->Groups[i].Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
+			outputStream << L"    SID: "; EzPrintSid(tokenRestrictedSids->Groups[i].Sid, outputStream); outputStream << std::endl;
+			outputStream << L"    Attributes: "; EzPrintBinary(reinterpret_cast<BYTE*>(&tokenRestrictedSids->Groups[i].Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
 		}
 
 		delete[] tokenRestrictedSids;
@@ -711,7 +625,7 @@ void EzLogTokenSandBoxInert(HANDLE token, std::wostream& outputStream) {
 	try {
 		BOOL tokenSandBoxInert = EzGetTokenSandBoxInert(token);
 
-		outputStream << L"Token Sand Box Inert: "; FormatBool(tokenSandBoxInert, outputStream); outputStream << std::endl;
+		outputStream << L"Token Sand Box Inert: "; EzPrintBool(tokenSandBoxInert, outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -726,7 +640,7 @@ void EzLogTokenOrigin(HANDLE token, std::wostream& outputStream) {
 	try {
 		LUID tokenOrigin = EzGetTokenOrigin(token);
 
-		outputStream << L"Token Origin: "; FormatLUID(tokenOrigin, outputStream); outputStream << std::endl;
+		outputStream << L"Token Origin: "; EzPrintLuid(tokenOrigin, outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -755,7 +669,7 @@ void EzLogTokenLinkedToken(HANDLE token, std::wostream& outputStream) {
 	try {
 		HANDLE tokenLinkedToken = EzGetTokenLinkedToken(token);
 
-		outputStream << L"Token Linked Token: "; FormatHex(reinterpret_cast<BYTE*>(&tokenLinkedToken), sizeof(HANDLE), outputStream); outputStream << std::endl;
+		outputStream << L"Token Linked Token: "; EzPrintHex(reinterpret_cast<BYTE*>(&tokenLinkedToken), sizeof(HANDLE), outputStream); outputStream << std::endl;
 
 		EzCloseHandleSafely(tokenLinkedToken);
 	}
@@ -765,7 +679,7 @@ void EzLogTokenElevation(HANDLE token, std::wostream& outputStream) {
 	try {
 		BOOL tokenElevation = EzGetTokenElevation(token);
 
-		outputStream << L"Token Is Elevated: "; FormatBool(tokenElevation, outputStream); outputStream << std::endl;
+		outputStream << L"Token Is Elevated: "; EzPrintBool(tokenElevation, outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -773,7 +687,7 @@ void EzLogTokenHasRestrictions(HANDLE token, std::wostream& outputStream) {
 	try {
 		BOOL tokenHasRestrictions = EzGetTokenHasRestrictions(token);
 
-		outputStream << L"Token Has Restrictions: "; FormatBool(tokenHasRestrictions, outputStream); outputStream << std::endl;
+		outputStream << L"Token Has Restrictions: "; EzPrintBool(tokenHasRestrictions, outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -789,7 +703,7 @@ void EzLogTokenVirtualizationAllowed(HANDLE token, std::wostream& outputStream) 
 	try {
 		BOOL tokenVirtualizationAllowed = EzGetTokenVirtualizationAllowed(token);
 
-		outputStream << L"Token Virtualization Allowed: "; FormatBool(tokenVirtualizationAllowed, outputStream); outputStream << std::endl;
+		outputStream << L"Token Virtualization Allowed: "; EzPrintBool(tokenVirtualizationAllowed, outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -797,7 +711,7 @@ void EzLogTokenVirtualizationEnabled(HANDLE token, std::wostream& outputStream) 
 	try {
 		BOOL tokenVirtualizationEnabled = EzGetTokenVirtualizationEnabled(token);
 
-		outputStream << L"Token Virtualization Enabled: "; FormatBool(tokenVirtualizationEnabled, outputStream); outputStream << std::endl;
+		outputStream << L"Token Virtualization Enabled: "; EzPrintBool(tokenVirtualizationEnabled, outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -806,8 +720,8 @@ void EzLogTokenIntegrityLevel(HANDLE token, std::wostream& outputStream) {
 		SID_AND_ATTRIBUTES tokenIntegrityLevel = EzGetTokenIntegrityLevel(token);
 
 		outputStream << L"Token Integrity Level:" << std::endl;
-		outputStream << "    SID: "; FormatSID(tokenIntegrityLevel.Sid, outputStream); outputStream << std::endl;
-		outputStream << "    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenIntegrityLevel.Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
+		outputStream << L"    SID: "; EzPrintSid(tokenIntegrityLevel.Sid, outputStream); outputStream << std::endl;
+		outputStream << L"    Attributes: "; EzPrintBinary(reinterpret_cast<BYTE*>(&tokenIntegrityLevel.Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -815,7 +729,7 @@ void EzLogTokenUIAccess(HANDLE token, std::wostream& outputStream) {
 	try {
 		BOOL tokenUIAccess = EzGetTokenUIAccess(token);
 
-		outputStream << L"Token UI Access: "; FormatBool(tokenUIAccess, outputStream); outputStream << std::endl;
+		outputStream << L"Token UI Access: "; EzPrintBool(tokenUIAccess, outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -835,8 +749,8 @@ void EzLogTokenLogonSid(HANDLE token, std::wostream& outputStream) {
 		for (DWORD i = 0; i < tokenLogonSid->GroupCount; i++)
 		{
 			if (i != 0) { outputStream << std::endl; }
-			outputStream << "    SID: "; FormatSID(tokenLogonSid->Groups[i].Sid, outputStream); outputStream << std::endl;
-			outputStream << "    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenLogonSid->Groups[i].Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
+			outputStream << L"    SID: "; EzPrintSid(tokenLogonSid->Groups[i].Sid, outputStream); outputStream << std::endl;
+			outputStream << L"    Attributes: "; EzPrintBinary(reinterpret_cast<BYTE*>(&tokenLogonSid->Groups[i].Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
 		}
 
 		delete[] tokenLogonSid;
@@ -847,7 +761,7 @@ void EzLogTokenIsAppContainer(HANDLE token, std::wostream& outputStream) {
 	try {
 		BOOL tokenIsAppContainer = EzGetTokenIsAppContainer(token);
 
-		outputStream << L"Token Is App Container: "; FormatBool(tokenIsAppContainer, outputStream); outputStream << std::endl;
+		outputStream << L"Token Is App Container: "; EzPrintBool(tokenIsAppContainer, outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -859,8 +773,8 @@ void EzLogTokenCapabilities(HANDLE token, std::wostream& outputStream) {
 		for (DWORD i = 0; i < tokenCapabilities->GroupCount; i++)
 		{
 			if (i != 0) { outputStream << std::endl; }
-			outputStream << "    SID: "; FormatSID(tokenCapabilities->Groups[i].Sid, outputStream); outputStream << std::endl;
-			outputStream << "    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenCapabilities->Groups[i].Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
+			outputStream << L"    SID: "; EzPrintSid(tokenCapabilities->Groups[i].Sid, outputStream); outputStream << std::endl;
+			outputStream << L"    Attributes: "; EzPrintBinary(reinterpret_cast<BYTE*>(&tokenCapabilities->Groups[i].Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
 		}
 
 		delete[] tokenCapabilities;
@@ -871,7 +785,7 @@ void EzLogTokenAppContainerSid(HANDLE token, std::wostream& outputStream) {
 	try {
 		PSID tokenAppContainerSid = EzGetTokenAppContainerSid(token);
 
-		outputStream << L"Token App Container SID: "; FormatSID(tokenAppContainerSid, outputStream); outputStream << std::endl;
+		outputStream << L"Token App Container SID: "; EzPrintSid(tokenAppContainerSid, outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -890,14 +804,14 @@ void EzLogTokenUserClaimAttributes(HANDLE token, std::wostream& outputStream) {
 		outputStream << L"Token User Claim Attributes:" << std::endl;
 		outputStream << L"    Version: " << tokenUserClaimAttributes->Version << std::endl;
 		outputStream << L"    Reserved: " << tokenUserClaimAttributes->Reserved << std::endl;
-		outputStream << L"    Attributes [" << tokenUserClaimAttributes->AttributeCount << "]:"; if (tokenUserClaimAttributes->AttributeCount == 0) { outputStream << " None"; } outputStream << std::endl;
+		outputStream << L"    Attributes [" << tokenUserClaimAttributes->AttributeCount << L"]:"; if (tokenUserClaimAttributes->AttributeCount == 0) { outputStream << L" None"; } outputStream << std::endl;
 		for (DWORD i = 0; i < tokenUserClaimAttributes->AttributeCount; i++)
 		{
 			CLAIM_SECURITY_ATTRIBUTE_V1 attribute = tokenUserClaimAttributes->Attribute.pAttributeV1[i];
 			outputStream << L"        Name: " << attribute.Name << std::endl;
 			outputStream << L"        Value Type: " << attribute.ValueType << std::endl;
 			outputStream << L"        Reserved: " << attribute.Reserved << std::endl;
-			outputStream << L"        Flags: "; FormatBinary(reinterpret_cast<BYTE*>(&attribute.Flags), sizeof(DWORD), outputStream); outputStream << std::endl;
+			outputStream << L"        Flags: "; EzPrintBinary(reinterpret_cast<BYTE*>(&attribute.Flags), sizeof(DWORD), outputStream); outputStream << std::endl;
 			outputStream << L"        Value Count: " << attribute.ValueCount << std::endl;
 			outputStream << L"        Values:" << std::endl;
 			for (DWORD j = 0; j < attribute.ValueCount; j++)
@@ -943,8 +857,8 @@ void EzLogTokenDeviceGroups(HANDLE token, std::wostream& outputStream) {
 		for (DWORD i = 0; i < tokenDeviceGroups->GroupCount; i++)
 		{
 			if (i != 0) { outputStream << std::endl; }
-			outputStream << "    SID: "; FormatSID(tokenDeviceGroups->Groups[i].Sid, outputStream); outputStream << std::endl;
-			outputStream << "    Attributes: "; FormatBinary(reinterpret_cast<BYTE*>(&tokenDeviceGroups->Groups[i].Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
+			outputStream << L"    SID: "; EzPrintSid(tokenDeviceGroups->Groups[i].Sid, outputStream); outputStream << std::endl;
+			outputStream << L"    Attributes: "; EzPrintBinary(reinterpret_cast<BYTE*>(&tokenDeviceGroups->Groups[i].Attributes), sizeof(DWORD), outputStream); outputStream << std::endl;
 		}
 
 		delete[] tokenDeviceGroups;
@@ -972,7 +886,7 @@ void EzLogTokenIsRestricted(HANDLE token, std::wostream& outputStream) {
 	try {
 		BOOL tokenIsRestricted = EzGetTokenIsRestricted(token);
 
-		outputStream << L"Token Is Restricted: "; FormatBool(tokenIsRestricted, outputStream); outputStream << std::endl;
+		outputStream << L"Token Is Restricted: "; EzPrintBool(tokenIsRestricted, outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -980,7 +894,7 @@ void EzLogTokenProcessTrustLevel(HANDLE token, std::wostream& outputStream) {
 	try {
 		PSID tokenProcessTrustLevel = EzGetTokenProcessTrustLevel(token);
 
-		outputStream << L"Token Process Trust Level: "; FormatSID(tokenProcessTrustLevel, outputStream); outputStream << std::endl;
+		outputStream << L"Token Process Trust Level: "; EzPrintSid(tokenProcessTrustLevel, outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -988,7 +902,7 @@ void EzLogTokenPrivateNameSpace(HANDLE token, std::wostream& outputStream) {
 	try {
 		BOOL tokenPrivateNameSpace = EzGetTokenPrivateNameSpace(token);
 
-		outputStream << L"Token Private Name Space: "; FormatBool(tokenPrivateNameSpace, outputStream); outputStream << std::endl;
+		outputStream << L"Token Private Name Space: "; EzPrintBool(tokenPrivateNameSpace, outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -1007,9 +921,9 @@ void EzLogTokenBnoIsolation(HANDLE token, std::wostream& outputStream) {
 		TOKEN_BNO_ISOLATION_INFORMATION tokenBnoIsolation = EzGetTokenBnoIsolation(token);
 
 		outputStream << L"Token BNO Isolation:" << std::endl;
-		outputStream << L"    Prefix: "; if (tokenBnoIsolation.IsolationPrefix == NULL) { outputStream << "NULL"; }
+		outputStream << L"    Prefix: "; if (tokenBnoIsolation.IsolationPrefix == NULL) { outputStream << L"NULL"; }
 		else { outputStream << tokenBnoIsolation.IsolationPrefix; } outputStream << std::endl;
-		outputStream << L"    Enabled: "; FormatBool(tokenBnoIsolation.IsolationEnabled, outputStream); outputStream << std::endl;
+		outputStream << L"    Enabled: "; EzPrintBool(tokenBnoIsolation.IsolationEnabled, outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -1031,7 +945,7 @@ void EzLogTokenIsSandboxed(HANDLE token, std::wostream& outputStream) {
 	try {
 		BOOL tokenIsSandboxed = EzGetTokenIsSandboxed(token);
 
-		outputStream << L"Token Is Sandboxed: "; FormatBool(tokenIsSandboxed, outputStream); outputStream << std::endl;
+		outputStream << L"Token Is Sandboxed: "; EzPrintBool(tokenIsSandboxed, outputStream); outputStream << std::endl;
 	}
 	catch (EzError error) { error.Print(); }
 }
@@ -1058,7 +972,7 @@ void EzLogMaxTokenInfoClass(HANDLE token, std::wostream& outputStream) {
 }
 
 void EzLogTokenInfo(HANDLE token, std::wostream& outputStream) {
-	outputStream << L"Token Handle: "; FormatHex(reinterpret_cast<BYTE*>(&token), sizeof(HANDLE), outputStream); outputStream << std::endl << std::endl;
+	outputStream << L"Token Handle: "; EzPrintHex(reinterpret_cast<BYTE*>(&token), sizeof(HANDLE), outputStream); outputStream << std::endl << std::endl;
 
 	EzLogTokenUser(token, outputStream); outputStream << std::endl;
 	EzLogTokenGroups(token, outputStream); outputStream << std::endl;
@@ -1128,14 +1042,9 @@ HANDLE EzDuplicateCurrentToken() {
 		CloseHandle(currentToken);
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
-
 	CloseHandle(currentToken);
+	
 	return currentTokenCopy;
-}
-void EzCloseHandleSafely(HANDLE handle) {
-	if (!CloseHandle(handle)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
 }
 
 // Impersonating tokens
@@ -1171,7 +1080,7 @@ void EzImpersonateWinLogon() {
 		EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
 	}
 	do {
-		if (lstrcmpW(processEntry.szExeFile, L"winlogon.exe") == 0) {
+		if (lstrcmp(processEntry.szExeFile, L"winlogon.exe") == 0) {
 			winLogonPID = processEntry.th32ProcessID;
 			break;
 		}
@@ -1194,8 +1103,9 @@ void EzImpersonateWinLogon() {
 
 	HANDLE winLogonToken;
 	if (!OpenProcessToken(winLogon, TOKEN_QUERY | TOKEN_DUPLICATE, &winLogonToken)) {
+		lastError = GetLastError();
 		CloseHandle(winLogon);
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+		EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
 	}
 
 	try {
@@ -1227,7 +1137,7 @@ void EzImpersonateLsass() {
 		EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
 	}
 	do {
-		if (lstrcmpW(processEntry.szExeFile, L"lsass.exe") == 0) {
+		if (lstrcmp(processEntry.szExeFile, L"lsass.exe") == 0) {
 			lsassPID = processEntry.th32ProcessID;
 			break;
 		}
@@ -1250,8 +1160,9 @@ void EzImpersonateLsass() {
 
 	HANDLE lsassToken;
 	if (!OpenProcessToken(lsass, TOKEN_QUERY | TOKEN_DUPLICATE, &lsassToken)) {
+		lastError = GetLastError();
 		CloseHandle(lsass);
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+		EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
 	}
 
 	try {
@@ -1269,7 +1180,7 @@ void EzImpersonateLsass() {
 
 // Enabling/disabling token privileges
 LUID EzLookupPrivilege(LPCWSTR privilege) {
-	LUID output;
+	LUID output = { };
 	if (!LookupPrivilegeValue(NULL, privilege, &output))
 	{
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
@@ -1348,25 +1259,10 @@ BOOL EzTokenHasPrivilege(HANDLE token, LUID privilege) {
 }
 
 // Starting processes with tokens
-LPWSTR EzGetCurrentExePath() {
-	LPWSTR currentExePath = new WCHAR[MAX_PATH];
-	if (!GetModuleFileName(NULL, currentExePath, MAX_PATH) == 0) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
-	return currentExePath;
-}
-void EzCloseProcessInformation(PROCESS_INFORMATION processInfo) {
-	if (!CloseHandle(processInfo.hThread)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
-	if (!CloseHandle(processInfo.hProcess)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
-}
 PROCESS_INFORMATION EzLaunchAsToken(HANDLE token, LPCWSTR exePath) {
 	STARTUPINFO startupInfo = { };
 	PROCESS_INFORMATION processInfo = { };
-	if (!CreateProcessWithTokenW(token, LOGON_WITH_PROFILE, exePath, NULL, 0, NULL, NULL, &startupInfo, &processInfo)) {
+	if (!CreateProcessWithToken(token, LOGON_WITH_PROFILE, exePath, NULL, 0, NULL, NULL, &startupInfo, &processInfo)) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 
@@ -1374,13 +1270,13 @@ PROCESS_INFORMATION EzLaunchAsToken(HANDLE token, LPCWSTR exePath) {
 }
 PROCESS_INFORMATION EzLaunchAsToken(HANDLE token) {
 	LPWSTR currentExePath = EzGetCurrentExePath();
-
-	STARTUPINFO startupInfo = { };
-	GetStartupInfo(&startupInfo);
 	PROCESS_INFORMATION processInfo = { };
-	if (!CreateProcessWithTokenW(token, LOGON_WITH_PROFILE, currentExePath, NULL, 0, NULL, NULL, &startupInfo, &processInfo)) {
-		delete currentExePath;
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	try {
+		EzLaunchAsToken(token, currentExePath);
+	}
+	catch (...) {
+		delete[] currentExePath;
+		throw;
 	}
 	delete[] currentExePath;
 
@@ -1397,28 +1293,63 @@ PROCESS_INFORMATION EzLaunchAsUser(HANDLE token, LPCWSTR exePath) {
 }
 PROCESS_INFORMATION EzLaunchAsUser(HANDLE token) {
 	LPWSTR currentExePath = EzGetCurrentExePath();
-
-	STARTUPINFO startupInfo = { };
-	GetStartupInfo(&startupInfo);
 	PROCESS_INFORMATION processInfo = { };
-	if (!CreateProcessAsUser(token, currentExePath, NULL, NULL, NULL, FALSE, 0, NULL, NULL, &startupInfo, &processInfo)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	try {
+		processInfo = EzLaunchAsUser(token, currentExePath);
+	}
+	catch (...) {
+		delete[] currentExePath;
+		throw;
 	}
 	delete[] currentExePath;
 
 	return processInfo;
 }
-void EzRestartWithToken(HANDLE token) {
+BOOL EzLaunchWithUAC(LPCWSTR exePath) {
+	// NOTE: Returns TRUE if the user selects yes to the UAC else FALSE.
+	DWORD lastError = 0;
+
+	SHELLEXECUTEINFO shellExecuteInfo = { };
+	shellExecuteInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+	shellExecuteInfo.fMask = 0;
+	shellExecuteInfo.hwnd = 0;
+	shellExecuteInfo.lpVerb = L"runas";
+	shellExecuteInfo.lpFile = exePath;
+	shellExecuteInfo.lpParameters = NULL;
+	shellExecuteInfo.lpDirectory = NULL;
+	shellExecuteInfo.nShow = SW_SHOWNORMAL;
+	shellExecuteInfo.hInstApp = NULL;
+	shellExecuteInfo.lpIDList = NULL;
+	shellExecuteInfo.lpClass = NULL;
+	shellExecuteInfo.hkeyClass = NULL;
+	shellExecuteInfo.dwHotKey = 0;
+	shellExecuteInfo.hIcon = NULL;
+	shellExecuteInfo.hMonitor = NULL;
+	shellExecuteInfo.hProcess = NULL;
+	if (!ShellExecuteEx(&shellExecuteInfo)) {
+		lastError = GetLastError();
+		if (lastError == ERROR_CANCELLED) {
+			return FALSE;
+		}
+		else {
+			EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
+		}
+	}
+	return TRUE;
+}
+BOOL EzLaunchWithUAC() {
+	LPWSTR currentExePath = EzGetCurrentExePath();
+	BOOL uacAccepted = FALSE;
 	try {
-		EzCloseProcessInformation(EzLaunchAsToken(token));
+		uacAccepted = EzLaunchWithUAC(currentExePath);
 	}
 	catch (...) {
-		EzCloseProcessInformation(EzLaunchAsUser(token));
+		delete[] currentExePath;
+		throw;
 	}
+	delete[] currentExePath;
 
-	// Close token because there is no way we will need it after closing the process.
-	EzCloseHandleSafely(token);
-	ExitProcess(0);
+	return uacAccepted;
 }
 
 // Token privilege escalation
@@ -1471,9 +1402,7 @@ void EzStealCreateTokenPermission(HANDLE token) {
 	// Give UIAccess to the token with the privilages we now have.
 	TOKEN_PRIVILEGES tp = {};
 	tp.PrivilegeCount = 1;
-	if (!LookupPrivilegeValue(NULL, SE_CREATE_TOKEN_NAME, &tp.Privileges[0].Luid)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
+	tp.Privileges[0].Luid = EzLookupPrivilege(SE_CREATE_TOKEN_NAME);
 	tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED | SE_PRIVILEGE_ENABLED_BY_DEFAULT;
 	EzSetTokenPrivileges(token, &tp);
 
@@ -1494,7 +1423,7 @@ typedef struct OBJECT_ATTRIBUTES {
 	PVOID SecurityDescriptor;
 	PVOID SecurityQualityOfService;
 } OBJECT_ATTRIBUTES, * POBJECT_ATTRIBUTES;
-typedef NTSYSAPI NTSTATUS(NTAPI* _NtCreateToken)(OUT PHANDLE TokenHandle, IN ACCESS_MASK DesiredAccess, IN POBJECT_ATTRIBUTES ObjectAttributes, IN TOKEN_TYPE TokenType, IN PLUID AuthenticationId, IN PLARGE_INTEGER ExpirationTime, IN PTOKEN_USER TokenUser, IN PTOKEN_GROUPS TokenGroups, IN PTOKEN_PRIVILEGES TokenPrivileges, IN PTOKEN_OWNER TokenOwner, IN PTOKEN_PRIMARY_GROUP TokenPrimaryGroup, IN PTOKEN_DEFAULT_DACL TokenDefaultDacl, IN PTOKEN_SOURCE TokenSource);
+typedef NTSYSAPI NTSTATUS(NTAPI* PNtCreateToken)(OUT PHANDLE TokenHandle, IN ACCESS_MASK DesiredAccess, IN POBJECT_ATTRIBUTES ObjectAttributes, IN TOKEN_TYPE TokenType, IN PLUID AuthenticationId, IN PLARGE_INTEGER ExpirationTime, IN PTOKEN_USER TokenUser, IN PTOKEN_GROUPS TokenGroups, IN PTOKEN_PRIVILEGES TokenPrivileges, IN PTOKEN_OWNER TokenOwner, IN PTOKEN_PRIMARY_GROUP TokenPrimaryGroup, IN PTOKEN_DEFAULT_DACL TokenDefaultDacl, IN PTOKEN_SOURCE TokenSource);
 HANDLE EzCreateGodToken() {
 	/* KNOWN ISSUE
 	NtCreateToken only works with pointers to stack memory or pointers to
@@ -1506,44 +1435,51 @@ HANDLE EzCreateGodToken() {
 	home edition and therefore is not given to the god token.
 	*/
 
+	DWORD lastError = 0;
+	NTSTATUS nt = 0;
+
 	// Impersonate Lsass to get the SE_CREATE_TOKEN_NAME privilege
 	EzImpersonateLsass();
 
-	// Load ntdll.dll
-	HMODULE ntdll = LoadLibrary(L"ntdll.dll");
-	if (ntdll == NULL) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
 	// Load NtCreateToken function from ntdll.dll
-	_NtCreateToken NtCreateToken = reinterpret_cast<_NtCreateToken>(GetProcAddress(ntdll, "NtCreateToken"));
-	if (NtCreateToken == NULL) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
+	PNtCreateToken NtCreateToken = reinterpret_cast<PNtCreateToken>(EzGetFunctionAddress("NtCreateToken", L"ntdll.dll"));
 
 	// Get sids for users, groups, and integrity levels we need.
 	PSID systemUserSid = NULL;
-	if (!ConvertStringSidToSidW(L"S-1-5-18", &systemUserSid)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	if (!ConvertStringSidToSid(L"S-1-5-18", &systemUserSid)) {
+		lastError = GetLastError();
+		EzStopImpersonating();
+		EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
 	}
 	PSID administratorsGroupSid = NULL;
-	if (!ConvertStringSidToSidW(L"S-1-5-32-544", &administratorsGroupSid)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	if (!ConvertStringSidToSid(L"S-1-5-32-544", &administratorsGroupSid)) {
+		lastError = GetLastError();
+		EzStopImpersonating();
+		EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
 	}
 	PSID authenticatedUsersGroupSid = NULL;
-	if (!ConvertStringSidToSidW(L"S-1-5-11", &authenticatedUsersGroupSid)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	if (!ConvertStringSidToSid(L"S-1-5-11", &authenticatedUsersGroupSid)) {
+		lastError = GetLastError();
+		EzStopImpersonating();
+		EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
 	}
 	PSID everyoneGroupSid = NULL;
-	if (!ConvertStringSidToSidW(L"S-1-1-0", &everyoneGroupSid)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	if (!ConvertStringSidToSid(L"S-1-1-0", &everyoneGroupSid)) {
+		lastError = GetLastError();
+		EzStopImpersonating();
+		EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
 	}
 	PSID systemIntegrityLevelSid = NULL;
-	if (!ConvertStringSidToSidW(L"S-1-16-16384", &systemIntegrityLevelSid)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	if (!ConvertStringSidToSid(L"S-1-16-16384", &systemIntegrityLevelSid)) {
+		lastError = GetLastError();
+		EzStopImpersonating();
+		EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
 	}
 	PSID trustedInstallerUserSid = NULL;
-	if (!ConvertStringSidToSidW(L"S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464", &trustedInstallerUserSid)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	if (!ConvertStringSidToSid(L"S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464", &trustedInstallerUserSid)) {
+		lastError = GetLastError();
+		EzStopImpersonating();
+		EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
 	}
 
 	ACCESS_MASK desiredAccess = TOKEN_ALL_ACCESS;
@@ -1644,8 +1580,11 @@ HANDLE EzCreateGodToken() {
 	tokenSource->SourceIdentifier.LowPart = 420;
 	memcpy(tokenSource->SourceName, "MYSTERY", TOKEN_SOURCE_LENGTH);
 
-	HANDLE token;
-	EzError::ThrowFromNT(NtCreateToken(&token, desiredAccess, &objectAttributes, tokenType, &authenticationID, &expirationTime, &tokenUser, tokenGroups, tokenPrivileges, &tokenOwner, &tokenPrimaryGroup, tokenDefaultDacl, tokenSource));
+	HANDLE token = 0;
+	nt = NtCreateToken(&token, desiredAccess, &objectAttributes, tokenType, &authenticationID, &expirationTime, &tokenUser, tokenGroups, tokenPrivileges, &tokenOwner, &tokenPrimaryGroup, tokenDefaultDacl, tokenSource);
+	if (FAILED(nt)) {
+		EzError::ThrowFromNT(nt, __FILE__, __LINE__);
+	}
 
 	DWORD activeConsoleSessionId = WTSGetActiveConsoleSessionId();
 	if (activeConsoleSessionId != 0xFFFFFFFF) {

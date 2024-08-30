@@ -36,6 +36,8 @@
     <ClCompile Include="Code\CoverImage.cpp" />
     <ClCompile Include="Code\EzAudio.cpp" />
     <ClCompile Include="Code\EzError.cpp" />
+    <ClCompile Include="Code\EzHelper.h" />
+    <ClCompile Include="Code\EzHelper.cpp" />
     <ClCompile Include="Code\EzLL.cpp" />
     <ClCompile Include="Code\EZRenderer.cpp" />
     <ClCompile Include="Code\EzTokens.cpp" />
@@ -45,6 +47,21 @@
     <ClCompile Include="Code\MysteryGraphics.cpp" />
     <ClCompile Include="Code\MysterySong.cpp" />
     <ClCompile Include="Code\program.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitignore" />
+    <None Include="MysteryInstaller.bat" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="CoverImage.bmp" />
+    <Image Include="Icon.ico" />
+    <Image Include="Icon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="MysterySong.wav" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="MysteryTask (UNUSED).xml" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -104,6 +121,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -118,6 +136,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

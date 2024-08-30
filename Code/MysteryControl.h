@@ -1,5 +1,6 @@
 #pragma once
+#include <Windows.h>
 
-void InitMysteryControl();
+BOOL InitMysteryControl();
 void UpdateMysteryControl();
 void FreeMysteryControl();

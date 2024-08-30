@@ -5,8 +5,8 @@
 #include "EzLL.h"
 #include <iostream>
 
-IMMDeviceEnumerator* deviceEnumerator = NULL;
-struct AudioContext {
+
+struct Context {
 	BOOL disabled;
 	LONGLONG disabledTime;
 
@@ -23,25 +23,26 @@ struct AudioContext {
 	BYTE* buffer;
 	UINT32 position;
 };
-EzLL audioContexts = { };
+static EzLL contexts = { };
+static IMMDeviceEnumerator* deviceEnumerator = NULL;
 
-AudioContext* GetContextFromDeviceID(LPWSTR deviceID) {
-	UINT32 audioContextCount = EzLLCount(&audioContexts);
-	EzLLEnumStart(&audioContexts);
-	for (UINT32 i = 0; i < audioContextCount; i++)
+static Context* GetContextFromDeviceID(LPWSTR deviceID) {
+	UINT32 contextCount = EzLLCount(&contexts);
+	EzLLEnumStart(&contexts);
+	for (UINT32 i = 0; i < contextCount; i++)
 	{
-		AudioContext* current = reinterpret_cast<AudioContext*>(EzLLEnumGet(&audioContexts));
-		EzLLEnumNext(&audioContexts);
+		Context* context = EzLLEnumGetAs<Context>(&contexts);
+		EzLLEnumNext(&contexts);
 
-		if (lstrcmp(deviceID, current->deviceID) == 0) {
-			return current;
+		if (lstrcmp(deviceID, context->deviceID) == 0) {
+			return context;
 		}
 	}
 	return NULL;
 }
-void AddContext(IMMDevice* device) {
-	AudioContext* context = new AudioContext();
-	memset(context, 0, sizeof(AudioContext));
+static void AddContext(IMMDevice* device) {
+	Context* context = new Context();
+	memset(context, 0, sizeof(Context));
 
 	context->disabled = FALSE;
 	context->disabledTime = 0;
@@ -53,10 +54,19 @@ void AddContext(IMMDevice* device) {
 	context->volumeController = EzAudioGetVolumeController(context->device);
 	context->client = EzAudioGetClient(context->device);
 
-	context->format = EzAudioGetDeviceFormat(context->client);
 	WAVEFORMATEX* assetFormat = EzAudioGetAssetFormat(&MysterySong_Asset);
-	context->buffer = EzAudioTranscode(assetFormat, context->format, MysterySong_Asset.Buffer, MysterySong_BufferLength, &context->bufferLength);
-	delete[] assetFormat;
+	if (EzAudioClientSupportsFormat(context->client, assetFormat, TRUE)) {
+		context->format = assetFormat;
+		context->bufferLength = MysterySong_Asset.BufferLength;
+		context->buffer = new BYTE[context->bufferLength];
+		memcpy(context->buffer, MysterySong_Asset.Buffer, context->bufferLength);
+	}
+	else {
+		std::wcout << "Transcoding mystery song for audio device " << context->deviceName << std::endl;
+		context->format = EzAudioGetDeviceFormat(context->client);
+		context->buffer = EzAudioTranscode(assetFormat, context->format, MysterySong_Asset.Buffer, MysterySong_BufferLength, &context->bufferLength);
+		delete[] assetFormat;
+	}
 	context->position = 0;
 
 	EzAudioInitClient(context->client, context->format, TRUE);
@@ -64,10 +74,10 @@ void AddContext(IMMDevice* device) {
 	EzAudioFillBuffer(context->client, context->renderer, context->format, context->buffer, context->bufferLength, &context->position, TRUE);
 	EzAudioStartClient(context->client);
 
-	EzLLAdd(&audioContexts, context);
+	EzLLAdd(&contexts, context);
 	std::wcout << L"Added new audio player for device " << context->deviceName << std::endl;
 }
-void DisableContext(AudioContext* context) {
+static void DisableContext(Context* context) {
 	std::wcout << L"Disabling audio player due to error " << context->deviceName << std::endl;
 
 	context->disabled = TRUE;
@@ -83,21 +93,12 @@ void DisableContext(AudioContext* context) {
 	context->volumeController->Release();
 	context->volumeController = NULL;
 
-	delete[] context->buffer;
-	context->buffer = NULL;
-	context->bufferLength = 0;
 	context->position = 0;
-	delete[] context->format;
-	context->format = NULL;
 }
-void ReinitContext(AudioContext* context) {
+static void ReinitContext(Context* context) {
 	context->volumeController = EzAudioGetVolumeController(context->device);
 	context->client = EzAudioGetClient(context->device);
 
-	context->format = EzAudioGetDeviceFormat(context->client);
-	WAVEFORMATEX* assetFormat = EzAudioGetAssetFormat(&MysterySong_Asset);
-	context->buffer = EzAudioTranscode(assetFormat, context->format, MysterySong_Asset.Buffer, MysterySong_BufferLength, &context->bufferLength);
-	delete[] assetFormat;
 	context->position = 0;
 
 	EzAudioInitClient(context->client, context->format, TRUE);
@@ -110,7 +111,7 @@ void ReinitContext(AudioContext* context) {
 
 	std::wcout << L"Reinitialized audio player for device " << context->deviceName << std::endl;
 }
-void RemoveContext(AudioContext* context) {
+static void RemoveContext(Context* context) {
 	context->disabled = TRUE;
 	context->disabledTime = 0;
 
@@ -134,7 +135,7 @@ void RemoveContext(AudioContext* context) {
 	delete[] context->deviceName;
 	delete[] context->deviceID;
 
-	EzLLRemove(&audioContexts, context);
+	EzLLRemove(&contexts, context);
 
 	delete context;
 }
@@ -147,38 +148,33 @@ void UpdateMysteryAudio() {
 	UINT32 deviceCount = EzAudioGetDevices(deviceEnumerator, &devices);
 	for (UINT32 i = 0; i < deviceCount; i++)
 	{
-		try {
-			LPWSTR deviceID = EzAudioGetDeviceID(devices[i]);
-			AudioContext* context = GetContextFromDeviceID(deviceID);
-			if (context == NULL) {
-				AddContext(devices[i]);
-			}
-			else {
-				devices[i]->Release();
-				if (context->disabled) {
-					LONGLONG timeNow = 0;
-					if (!QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&timeNow))) {
-						EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-					}
-					if (timeNow - context->disabledTime > 10000000) {
-						ReinitContext(context);
-					}
+		LPWSTR deviceID = EzAudioGetDeviceID(devices[i]);
+		Context* context = GetContextFromDeviceID(deviceID);
+		if (context == NULL) {
+			AddContext(devices[i]);
+		}
+		else {
+			devices[i]->Release();
+			if (context->disabled) {
+				LONGLONG timeNow = 0;
+				if (!QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&timeNow))) {
+					EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+				}
+				if (timeNow - context->disabledTime > 10000000) {
+					ReinitContext(context);
 				}
 			}
-			delete[] deviceID;
 		}
-		catch (EzError error) {
-			error.Print();
-		}
+		delete[] deviceID;
 	}
 	delete[] devices;
 
-	UINT32 audioContextCount = EzLLCount(&audioContexts);
-	EzLLEnumStart(&audioContexts);
-	for (UINT32 i = 0; i < audioContextCount; i++)
+	UINT32 contextCount = EzLLCount(&contexts);
+	EzLLEnumStart(&contexts);
+	for (UINT32 i = 0; i < contextCount; i++)
 	{
-		AudioContext* context = reinterpret_cast<AudioContext*>(EzLLEnumGet(&audioContexts));
-		EzLLEnumNext(&audioContexts);
+		Context* context = reinterpret_cast<Context*>(EzLLEnumGet(&contexts));
+		EzLLEnumNext(&contexts);
 		if (!context->disabled) {
 			try {
 				EzAudioFillBuffer(context->client, context->renderer, context->format, context->buffer, context->bufferLength, &context->position, TRUE);
@@ -187,16 +183,22 @@ void UpdateMysteryAudio() {
 				EzAudioSetMute(context->volumeController, FALSE);
 			}
 			catch (EzError error) {
-				error.Print();
-				DisableContext(context);
+				HRESULT errorHR = error.GetHR();
+				if (errorHR == 0x80004005 /* EzAudioFillBuffer failed because device is disconnected. */
+					|| errorHR == 0x8007001F /* Generic device disconnected error. */) {
+					DisableContext(context);
+				}
+				else {
+					throw;
+				}
 			}
 		}
 	}
 }
 void FreeMysteryAudio() {
-	while (EzLLCount(&audioContexts) > 0)
+	while (EzLLCount(&contexts) > 0)
 	{
-		AudioContext* context = reinterpret_cast<AudioContext*>(EzLLGetHead(&audioContexts));
+		Context* context = reinterpret_cast<Context*>(EzLLGetHead(&contexts));
 		RemoveContext(context);
 	}
 	deviceEnumerator->Release();

@@ -54,7 +54,7 @@ struct EzAudioAsset {
 };
 
 // Better version of IsFormatSupported
-HRESULT EzAudioClientSupportsFormat(IAudioClient* client, const WAVEFORMATEX* format, BOOL exclusive, BOOL* pIsSupported);
+BOOL EzAudioClientSupportsFormat(IAudioClient* client, const WAVEFORMATEX* format, BOOL exclusive);
 
 // Devices and DeviceEnumerators
 IMMDeviceEnumerator* EzAudioGetDeviceEnumerator();

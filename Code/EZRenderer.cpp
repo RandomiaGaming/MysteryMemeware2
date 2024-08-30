@@ -218,8 +218,18 @@ void EzCreateSwapChainRenderer(HWND windowHandle, const EzSwapChainRendererSetti
 	D2D1_BITMAP_PROPERTIES1 backBufferProperties = { };
 	backBufferProperties.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW;
 	backBufferProperties.colorContext = NULL;
-	backBufferProperties.dpiX = 96.0f; // TODO
-	backBufferProperties.dpiY = 96.0f; // TODO
+	if (settings->DpiX == 0) {
+		backBufferProperties.dpiX = 96.0f;
+	}
+	else {
+		backBufferProperties.dpiX = settings->DpiX;
+	}
+	if (settings->DpiY == 0) {
+		backBufferProperties.dpiY = 96.0f;
+	}
+	else {
+		backBufferProperties.dpiY = settings->DpiY;
+	}
 	backBufferProperties.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
 	if (settings->PixelFormat != DXGI_FORMAT_UNKNOWN) {
 		backBufferProperties.pixelFormat.format = settings->PixelFormat;

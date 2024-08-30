@@ -6,44 +6,50 @@
 
 // Formats multiple pieces of data into a full error message and allocates that string on the heap.
 // sourceType: 0 = none, 1 == errorCode, 2 = hr, 3 = nt
-LPWSTR ConstructMessage(LPCWSTR errorMessage, BYTE sourceType = 0, void* source = NULL, LPCSTR file = NULL, int line = -1) {
+static LPWSTR ConstructMessage(LPCWSTR errorMessage, BYTE sourceType = 0, void* source = NULL, LPCSTR file = NULL, int line = -1) {
 	try {
 		std::wostringstream messageStream;
 
-		if (file == NULL) { messageStream << "ERROR in UnknownFile"; }
+		if (file == NULL) { messageStream << L"ERROR in UnknownFile"; }
 		else {
 			LPCSTR fileNameOnly = file + lstrlenA(file);
 			while (fileNameOnly >= file && *fileNameOnly != '\\') { fileNameOnly--; }
-			messageStream << "ERROR in " << (fileNameOnly + 1);
+			messageStream << L"ERROR in " << (fileNameOnly + 1);
 		}
 
-		if (line < 0) { messageStream << " at UnknownLine"; }
-		else { messageStream << " at line " << line; }
+		if (line < 0) { messageStream << L" at UnknownLine"; }
+		else { messageStream << L" at line " << line; }
 
 		SYSTEMTIME timeNow;
 		GetLocalTime(&timeNow);
 		if (timeNow.wHour == 0) {
-			messageStream << " at 12:" << timeNow.wMinute << ":" << timeNow.wSecond << "am";
+			messageStream << L" at 12:" << timeNow.wMinute << L":" << timeNow.wSecond << L"am";
 		}
 		else if (timeNow.wHour < 12) {
-			messageStream << " at " << (timeNow.wHour % 12) << ":" << timeNow.wMinute << ":" << timeNow.wSecond << "am";
+			messageStream << L" at " << (timeNow.wHour % 12) << L":" << timeNow.wMinute << L":" << timeNow.wSecond << L"am";
 		}
 		else {
-			messageStream << " at " << (timeNow.wHour % 12) << ":" << timeNow.wMinute << ":" << timeNow.wSecond << "pm";
+			messageStream << L" at " << (timeNow.wHour % 12) << L":" << timeNow.wMinute << L":" << timeNow.wSecond << L"pm";
 		}
-		messageStream << " on " << timeNow.wMonth << "/" << timeNow.wDay << "/" << timeNow.wYear;
+		messageStream << L" on " << timeNow.wMonth << L"/" << timeNow.wDay << L"/" << timeNow.wYear;
 
 		if (sourceType == 1) {
-			messageStream << " from DOS error 0x" << std::hex << *reinterpret_cast<DWORD*>(source) << std::dec << std::endl;
+			messageStream << L" from error code 0x" << std::hex << std::setw(sizeof(DWORD) * 2) << std::setfill(L'0')
+				<< *reinterpret_cast<DWORD*>(source)
+				<< std::setfill(L' ') << std::setw(0) << std::dec;
 		}
 		else if (sourceType == 2) {
-			messageStream << " from HResult 0x" << std::hex << *reinterpret_cast<HRESULT*>(source)  << std::dec << std::endl;
+			messageStream << L" from HResult 0x" << std::hex << std::setw(sizeof(HRESULT) * 2) << std::setfill(L'0')
+				<< *reinterpret_cast<HRESULT*>(source)
+				<< std::setfill(L' ') << std::setw(0) << std::dec;
 		}
 		else if (sourceType == 3) {
-			messageStream << " from NtStatus 0x" << std::hex << *reinterpret_cast<NTSTATUS*>(source) << std::dec << std::endl;
+			messageStream << L" from NtStatus 0x" << std::hex << std::setw(sizeof(NTSTATUS) * 2) << std::setfill(L'0')
+				<< *reinterpret_cast<NTSTATUS*>(source)
+				<< std::setfill(L' ') << std::setw(0) << std::dec;
 		}
 
-		messageStream << ": " << errorMessage;
+		messageStream << L": " << errorMessage;
 
 		DWORD errorMessageLength = lstrlenW(errorMessage);
 		if (errorMessageLength >= 2) {
@@ -170,7 +176,7 @@ EzError& EzError::operator=(const EzError& other) {
 	return *this;
 }
 
-void EzError::Print() {
+void EzError::Print() const {
 	try {
 		HANDLE stdoutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 
