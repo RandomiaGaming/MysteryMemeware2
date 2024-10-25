@@ -10,6 +10,16 @@ void EzPrintHexA(void* value, DWORD length, std::ostream& outputStream) {
 	}
 	outputStream << std::nouppercase << std::setfill(' ') << std::setw(0) << std::dec;
 }
+void EzPrintHexW(void* value, DWORD length, std::wostream& outputStream) {
+	BYTE* valueBytes = reinterpret_cast<BYTE*>(value);
+	outputStream << L"0x" << std::hex << std::setw(2) << std::setfill(L'0') << std::uppercase;
+	for (DWORD i = length - 1; i != 0xFFFFFFFF; i--)
+	{
+		outputStream << valueBytes[i];
+	}
+	outputStream << std::nouppercase << std::setfill(L' ') << std::setw(0) << std::dec;
+}
+
 void EzPrintBinaryA(void* value, DWORD length, std::ostream& outputStream) {
 	BYTE* valueBytes = reinterpret_cast<BYTE*>(value);
 	for (DWORD i = 0; i < length; i++)
@@ -33,6 +43,30 @@ void EzPrintBinaryA(void* value, DWORD length, std::ostream& outputStream) {
 		else { outputStream << '1'; }
 	}
 }
+void EzPrintBinaryW(void* value, DWORD length, std::wostream& outputStream) {
+	BYTE* valueBytes = reinterpret_cast<BYTE*>(value);
+	for (DWORD i = 0; i < length; i++)
+	{
+		if (i != 0) { outputStream << L' '; }
+		if ((valueBytes[i] & 128) == 0) { outputStream << L'0'; }
+		else { outputStream << L'1'; }
+		if ((valueBytes[i] & 64) == 0) { outputStream << L'0'; }
+		else { outputStream << L'1'; }
+		if ((valueBytes[i] & 32) == 0) { outputStream << L'0'; }
+		else { outputStream << L'1'; }
+		if ((valueBytes[i] & 16) == 0) { outputStream << L'0'; }
+		else { outputStream << L'1'; }
+		if ((valueBytes[i] & 8) == 0) { outputStream << L'0'; }
+		else { outputStream << L'1'; }
+		if ((valueBytes[i] & 4) == 0) { outputStream << L'0'; }
+		else { outputStream << L'1'; }
+		if ((valueBytes[i] & 2) == 0) { outputStream << L'0'; }
+		else { outputStream << L'1'; }
+		if ((valueBytes[i] & 1) == 0) { outputStream << L'0'; }
+		else { outputStream << L'1'; }
+	}
+}
+
 void EzPrintBoolA(BOOL value, std::ostream& outputStream) {
 	if (value) {
 		outputStream << "True";
@@ -41,6 +75,15 @@ void EzPrintBoolA(BOOL value, std::ostream& outputStream) {
 		outputStream << "False";
 	}
 }
+void EzPrintBoolW(BOOL value, std::wostream& outputStream) {
+	if (value) {
+		outputStream << L"True";
+	}
+	else {
+		outputStream << L"False";
+	}
+}
+
 void EzPrintSidA(PSID value, std::ostream& outputStream) {
 	CHAR name[256];
 	CHAR domain[256];
@@ -94,57 +137,6 @@ void EzPrintSidA(PSID value, std::ostream& outputStream) {
 		if (value == 0) { outputStream << "Null SID"; }
 		else { outputStream << "Invalid/Unknown SID"; }
 		break;
-	}
-}
-void EzPrintLuidA(LUID value, std::ostream& outputStream) {
-	CHAR privilegeName[256];
-	DWORD nameLen = sizeof(privilegeName) / sizeof(privilegeName[0]);
-
-	if (LookupPrivilegeNameA(NULL, &value, privilegeName, &nameLen)) {
-		outputStream << privilegeName;
-	}
-	else {
-		EzPrintHexA(&value, sizeof(LUID), outputStream);
-	}
-}
-void EzPrintHexW(void* value, DWORD length, std::wostream& outputStream) {
-	BYTE* valueBytes = reinterpret_cast<BYTE*>(value);
-	outputStream << L"0x" << std::hex << std::setw(2) << std::setfill(L'0') << std::uppercase;
-	for (DWORD i = length - 1; i != 0xFFFFFFFF; i--)
-	{
-		outputStream << valueBytes[i];
-	}
-	outputStream << std::nouppercase << std::setfill(L' ') << std::setw(0) << std::dec;
-}
-void EzPrintBinaryW(void* value, DWORD length, std::wostream& outputStream) {
-	BYTE* valueBytes = reinterpret_cast<BYTE*>(value);
-	for (DWORD i = 0; i < length; i++)
-	{
-		if (i != 0) { outputStream << L' '; }
-		if ((valueBytes[i] & 128) == 0) { outputStream << L'0'; }
-		else { outputStream << L'1'; }
-		if ((valueBytes[i] & 64) == 0) { outputStream << L'0'; }
-		else { outputStream << L'1'; }
-		if ((valueBytes[i] & 32) == 0) { outputStream << L'0'; }
-		else { outputStream << L'1'; }
-		if ((valueBytes[i] & 16) == 0) { outputStream << L'0'; }
-		else { outputStream << L'1'; }
-		if ((valueBytes[i] & 8) == 0) { outputStream << L'0'; }
-		else { outputStream << L'1'; }
-		if ((valueBytes[i] & 4) == 0) { outputStream << L'0'; }
-		else { outputStream << L'1'; }
-		if ((valueBytes[i] & 2) == 0) { outputStream << L'0'; }
-		else { outputStream << L'1'; }
-		if ((valueBytes[i] & 1) == 0) { outputStream << L'0'; }
-		else { outputStream << L'1'; }
-	}
-}
-void EzPrintBoolW(BOOL value, std::wostream& outputStream) {
-	if (value) {
-		outputStream << L"True";
-	}
-	else {
-		outputStream << L"False";
 	}
 }
 void EzPrintSidW(PSID value, std::wostream& outputStream) {
@@ -202,6 +194,18 @@ void EzPrintSidW(PSID value, std::wostream& outputStream) {
 		break;
 	}
 }
+
+void EzPrintLuidA(LUID value, std::ostream& outputStream) {
+	CHAR privilegeName[256];
+	DWORD nameLen = sizeof(privilegeName) / sizeof(privilegeName[0]);
+
+	if (LookupPrivilegeNameA(NULL, &value, privilegeName, &nameLen)) {
+		outputStream << privilegeName;
+	}
+	else {
+		EzPrintHexA(&value, sizeof(LUID), outputStream);
+	}
+}
 void EzPrintLuidW(LUID value, std::wostream& outputStream) {
 	WCHAR privilegeName[256];
 	DWORD nameLen = sizeof(privilegeName) / sizeof(privilegeName[0]);
@@ -214,17 +218,34 @@ void EzPrintLuidW(LUID value, std::wostream& outputStream) {
 	}
 }
 
-void EzCloseHandleSafely(HANDLE handle) {
-	if (!CloseHandle(handle)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+LPSTR EzGetCurrentExePathA() {
+	DWORD maxPathLength = MAX_PATH;
+	DWORD pathLength = 0;
+	LPSTR path = new CHAR[maxPathLength];
+	while (true) {
+		pathLength = GetModuleFileNameA(NULL, path, maxPathLength);
+		if (pathLength == 0) {
+			EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+		}
+		else if (pathLength == maxPathLength) {
+			delete[] path;
+			maxPathLength += MAX_PATH;
+			path = new CHAR[maxPathLength];
+		}
+		else {
+			LPSTR pathTrimmed = new CHAR[pathLength + 1];
+			lstrcpyA(pathTrimmed, path);
+			delete[] path;
+			return pathTrimmed;
+		}
 	}
 }
-LPWSTR EzGetCurrentExePath() {
+LPWSTR EzGetCurrentExePathW() {
 	DWORD maxPathLength = MAX_PATH;
 	DWORD pathLength = 0;
 	LPWSTR path = new WCHAR[maxPathLength];
 	while (true) {
-		pathLength = GetModuleFileName(NULL, path, maxPathLength);
+		pathLength = GetModuleFileNameW(NULL, path, maxPathLength);
 		if (pathLength == 0) {
 			EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 		}
@@ -235,10 +256,16 @@ LPWSTR EzGetCurrentExePath() {
 		}
 		else {
 			LPWSTR pathTrimmed = new WCHAR[pathLength + 1];
-			memcpy(pathTrimmed, path, sizeof(WCHAR) * (pathLength + 1));
+			lstrcpyW(pathTrimmed, path);
 			delete[] path;
 			return pathTrimmed;
 		}
+	}
+}
+
+void EzCloseHandleSafely(HANDLE handle) {
+	if (!CloseHandle(handle)) {
+		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 }
 void EzCloseProcessInfoSafely(PROCESS_INFORMATION processInfo) {
@@ -246,14 +273,10 @@ void EzCloseProcessInfoSafely(PROCESS_INFORMATION processInfo) {
 	EzCloseHandleSafely(processInfo.hProcess);
 }
 
-DWORD EzFindProcessId(LPCWSTR processName) {
-
-}
-
-FARPROC EzGetFunctionAddress(LPCSTR functionName, LPCWSTR libraryName) {
-	HMODULE library = GetModuleHandle(libraryName);
+FARPROC EzGetFunctionAddressA(LPCSTR functionName, LPCSTR libraryName) {
+	HMODULE library = GetModuleHandleA(libraryName);
 	if (library == NULL) {
-		library = LoadLibrary(libraryName);
+		library = LoadLibraryA(libraryName);
 		if (library == NULL) {
 			EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 		}
@@ -266,6 +289,23 @@ FARPROC EzGetFunctionAddress(LPCSTR functionName, LPCWSTR libraryName) {
 
 	return functionAddress;
 }
+FARPROC EzGetFunctionAddressW(LPCSTR functionName, LPCWSTR libraryName) {
+	HMODULE library = GetModuleHandleW(libraryName);
+	if (library == NULL) {
+		library = LoadLibraryW(libraryName);
+		if (library == NULL) {
+			EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+		}
+	}
+
+	FARPROC functionAddress = GetProcAddress(library, functionName);
+	if (functionAddress == NULL) {
+		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	}
+
+	return functionAddress;
+}
+
 void EzSetProcessCritical(BOOL isCritical) {
 	// NOTE RtlSetProcessIsCritical requires the SE_DEBUG_NAME privilege to be enabled for the caller process token.
 	typedef NTSTATUS(WINAPI* PRtlSetProcessIsCritical) (
@@ -281,6 +321,7 @@ void EzSetProcessCritical(BOOL isCritical) {
 		EzError::ThrowFromNT(nt, __FILE__, __LINE__);
 	}
 }
+
 HWINSTA EzGetActiveStation() {
 	/* NOTE: According to Microsoft documentation
 	The interactive window station is the only window station that can display a user interface or receive user input.

@@ -1,7 +1,7 @@
 #pragma once
 #include <Windows.h>
 
-class EzError {
+class EzError final {
 public:
 	EzError(DWORD errorCode, LPCSTR file = NULL, int line = -1);
 	EzError(HRESULT hr, LPCSTR file = NULL, int line = -1);

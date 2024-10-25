@@ -10,24 +10,6 @@
 // Collapse All: Ctrl+M+O
 // Toggle Collapse: Ctrl+M+L
 
-// Missing ANSI version of CreateProcessWithToken fix
-_Must_inspect_result_ BOOL WINAPI
-CreateProcessWithTokenA(
-	_In_        HANDLE hToken,
-	_In_        DWORD dwLogonFlags,
-	_In_opt_    LPCSTR lpApplicationName,
-	_Inout_opt_ LPSTR lpCommandLine,
-	_In_        DWORD dwCreationFlags,
-	_In_opt_    LPVOID lpEnvironment,
-	_In_opt_    LPCSTR lpCurrentDirectory,
-	_In_        LPSTARTUPINFOA lpStartupInfo,
-	_Out_       LPPROCESS_INFORMATION lpProcessInformation
-) {
-
-
-	return CreateProcessWithTokenW(hToken, dwLogonFlags, lpApplicationName, lpCommandLine, dwCreationFlags, lpEnvironment, lpCurrentDirectory, lpStartupInfo, lpProcessInformation);
-}
-
 // Getting info about tokens
 static void* GetTokenInfo(HANDLE token, TOKEN_INFORMATION_CLASS desiredInfo) {
 	DWORD length = 0;
@@ -1262,7 +1244,7 @@ BOOL EzTokenHasPrivilege(HANDLE token, LUID privilege) {
 PROCESS_INFORMATION EzLaunchAsToken(HANDLE token, LPCWSTR exePath) {
 	STARTUPINFO startupInfo = { };
 	PROCESS_INFORMATION processInfo = { };
-	if (!CreateProcessWithToken(token, LOGON_WITH_PROFILE, exePath, NULL, 0, NULL, NULL, &startupInfo, &processInfo)) {
+	if (!CreateProcessWithTokenW(token, LOGON_WITH_PROFILE, exePath, NULL, 0, NULL, NULL, &startupInfo, &processInfo)) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 

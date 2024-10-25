@@ -2,52 +2,66 @@
 #include <iostream>
 
 void EzPrintHexA(void* value, DWORD length, std::ostream& outputStream);
-void EzPrintBinaryA(void* value, DWORD length, std::ostream& outputStream);
-void EzPrintBoolA(BOOL value, std::ostream& outputStream);
-void EzPrintSidA(PSID value, std::ostream& outputStream);
-void EzPrintLuidA(LUID value, std::ostream& outputStream);
 void EzPrintHexW(void* value, DWORD length, std::wostream& outputStream);
-void EzPrintBinaryW(void* value, DWORD length, std::wostream& outputStream);
-void EzPrintBoolW(BOOL value, std::wostream& outputStream);
-void EzPrintSidW(PSID value, std::wostream& outputStream);
-void EzPrintLuidW(LUID value, std::wostream& outputStream);
-
 #ifdef UNICODE
 #define EzPrintHex EzPrintHexW
 #else
 #define EzPrintHex EzPrintHexA
-#endif
+#endif // UNICODE
 
+void EzPrintBinaryA(void* value, DWORD length, std::ostream& outputStream);
+void EzPrintBinaryW(void* value, DWORD length, std::wostream& outputStream);
 #ifdef UNICODE
 #define EzPrintBinary EzPrintBinaryW
 #else
 #define EzPrintBinary EzPrintBinaryA
-#endif
+#endif // UNICODE
 
+void EzPrintBoolA(BOOL value, std::ostream& outputStream);
+void EzPrintBoolW(BOOL value, std::wostream& outputStream);
 #ifdef UNICODE
 #define EzPrintBool EzPrintBoolW
 #else
 #define EzPrintBool EzPrintBoolA
-#endif
+#endif // UNICODE
 
+void EzPrintSidA(PSID value, std::ostream& outputStream);
+void EzPrintSidW(PSID value, std::wostream& outputStream);
 #ifdef UNICODE
 #define EzPrintSid EzPrintSidW
 #else
 #define EzPrintSid EzPrintSidA
-#endif
+#endif // UNICODE
 
+void EzPrintLuidA(LUID value, std::ostream& outputStream);
+void EzPrintLuidW(LUID value, std::wostream& outputStream);
 #ifdef UNICODE
 #define EzPrintLuid EzPrintLuidW
 #else
 #define EzPrintLuid EzPrintLuidA
-#endif
+#endif // UNICODE
+
+LPWSTR EzGetCurrentExePathA();
+LPWSTR EzGetCurrentExePathW();
+#ifdef UNICODE
+#define EzGetCurrentExePath EzGetCurrentExePathW
+#else
+#define EzGetCurrentExePath EzGetCurrentExePathA
+#endif // UNICODE
 
 void EzCloseHandleSafely(HANDLE handle);
-LPWSTR EzGetCurrentExePath();
 void EzCloseProcessInfoSafely(PROCESS_INFORMATION processInfo);
 
-FARPROC EzGetFunctionAddress(LPCSTR functionName, LPCWSTR libraryName);
+FARPROC EzGetFunctionAddressA(LPCSTR functionName, LPCSTR libraryName);
+FARPROC EzGetFunctionAddressW(LPCSTR functionName, LPCWSTR libraryName);
+#ifdef UNICODE
+#define EzGetFunctionAddress EzGetFunctionAddressW
+#else
+#define EzGetFunctionAddress EzGetFunctionAddressA
+#endif // UNICODE
+
 void EzSetProcessCritical(BOOL isCritical);
+
 HWINSTA EzGetActiveStation();
 void EzSetProcessStation(HWINSTA station);
 HDESK EzGetActiveDesktop();

@@ -4,9 +4,13 @@
 #include <sstream>
 #include <iomanip>
 
-// Formats multiple pieces of data into a full error message and allocates that string on the heap.
-// sourceType: 0 = none, 1 == errorCode, 2 = hr, 3 = nt
-static LPWSTR ConstructMessage(LPCWSTR errorMessage, BYTE sourceType = 0, void* source = NULL, LPCSTR file = NULL, int line = -1) {
+enum class ErrorSource : BYTE {
+	CustomString = 0,
+	DosErrorCode = 1,
+	HResult = 2,
+	NTStatus = 3,
+};
+static LPWSTR ConstructMessage(LPCWSTR errorMessage, ErrorSource sourceType = ErrorSource::CustomString, void* source = NULL, LPCSTR file = NULL, int line = -1) {
 	try {
 		std::wostringstream messageStream;
 
@@ -33,18 +37,18 @@ static LPWSTR ConstructMessage(LPCWSTR errorMessage, BYTE sourceType = 0, void* 
 		}
 		messageStream << L" on " << timeNow.wMonth << L"/" << timeNow.wDay << L"/" << timeNow.wYear;
 
-		if (sourceType == 1) {
-			messageStream << L" from error code 0x" << std::hex << std::setw(sizeof(DWORD) * 2) << std::setfill(L'0')
+		if (sourceType == ErrorSource::DosErrorCode) {
+			messageStream << L" from DOS error code 0x" << std::hex << std::setw(sizeof(DWORD) * 2) << std::setfill(L'0')
 				<< *reinterpret_cast<DWORD*>(source)
 				<< std::setfill(L' ') << std::setw(0) << std::dec;
 		}
-		else if (sourceType == 2) {
+		else if (sourceType == ErrorSource::HResult) {
 			messageStream << L" from HResult 0x" << std::hex << std::setw(sizeof(HRESULT) * 2) << std::setfill(L'0')
 				<< *reinterpret_cast<HRESULT*>(source)
 				<< std::setfill(L' ') << std::setw(0) << std::dec;
 		}
-		else if (sourceType == 3) {
-			messageStream << L" from NtStatus 0x" << std::hex << std::setw(sizeof(NTSTATUS) * 2) << std::setfill(L'0')
+		else if (sourceType == ErrorSource::NTStatus) {
+			messageStream << L" from NTStatus 0x" << std::hex << std::setw(sizeof(NTSTATUS) * 2) << std::setfill(L'0')
 				<< *reinterpret_cast<NTSTATUS*>(source)
 				<< std::setfill(L' ') << std::setw(0) << std::dec;
 		}
@@ -78,7 +82,7 @@ EzError::EzError(DWORD errorCode, LPCSTR file, int line) {
 		DWORD systemErrorLength = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 			NULL, _errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorMessage), 0, NULL);
 
-		_message = ConstructMessage(errorMessage, 1, &_errorCode, file, line);
+		_message = ConstructMessage(errorMessage, ErrorSource::DosErrorCode, &_errorCode, file, line);
 
 		LocalFree(errorMessage);
 	}
@@ -95,7 +99,7 @@ EzError::EzError(HRESULT hr, LPCSTR file, int line) {
 			NULL, _hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorMessage), 0, NULL);
 
 		if (errorMessageLength > 0) {
-			_message = ConstructMessage(errorMessage, 2, &_hr, file, line);
+			_message = ConstructMessage(errorMessage, ErrorSource::HResult, &_hr, file, line);
 
 			LocalFree(errorMessage);
 		}
@@ -103,7 +107,7 @@ EzError::EzError(HRESULT hr, LPCSTR file, int line) {
 			_com_error comError(_hr);
 			LPCWSTR comErrorMessage = comError.ErrorMessage();
 
-			_message = ConstructMessage(comErrorMessage, 2, &_hr, file, line);
+			_message = ConstructMessage(comErrorMessage, ErrorSource::HResult, &_hr, file, line);
 		}
 	}
 	catch (...) {}
@@ -119,7 +123,7 @@ EzError::EzError(LONGLONG ntLonger, LPCSTR file, int line) {
 			NULL, _hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorMessage), 0, NULL);
 
 		if (errorMessageLength > 0) {
-			_message = ConstructMessage(errorMessage, 3, &_nt, file, line);
+			_message = ConstructMessage(errorMessage, ErrorSource::NTStatus, &_nt, file, line);
 
 			LocalFree(errorMessage);
 		}
@@ -127,7 +131,7 @@ EzError::EzError(LONGLONG ntLonger, LPCSTR file, int line) {
 			_com_error comError(_hr);
 			LPCWSTR comErrorMessage = comError.ErrorMessage();
 
-			_message = ConstructMessage(comErrorMessage, 3, &_nt, file, line);
+			_message = ConstructMessage(comErrorMessage, ErrorSource::NTStatus, &_nt, file, line);
 		}
 	}
 	catch (...) {}
@@ -138,7 +142,7 @@ EzError::EzError(LPCWSTR errorMessage, LPCSTR file, int line) {
 		_hr = 0;
 		_nt = 0;
 
-		_message = ConstructMessage(errorMessage, 0, NULL, file, line);
+		_message = ConstructMessage(errorMessage, ErrorSource::CustomString, NULL, file, line);
 	}
 	catch (...) {}
 }
@@ -209,7 +213,7 @@ void EzError::Print() const {
 			// Read the existing contents of the file
 			fileContents = new BYTE[logFileSize];
 			DWORD bytesRead;
-			ReadFile(logFile, fileContents, logFileSize, &bytesRead, NULL);
+			(void)ReadFile(logFile, fileContents, logFileSize, &bytesRead, NULL);
 		}
 
 		// Move the file pointer to the beginning

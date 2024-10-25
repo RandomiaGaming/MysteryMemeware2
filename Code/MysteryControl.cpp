@@ -3,6 +3,7 @@
 #include "EzError.h"
 #include "EzTokens.h"
 #include "EzWindow.h"
+#include "EzHelper.h"
 #include <tlhelp32.h>
 #include <sddl.h>
 
@@ -194,9 +195,9 @@ BOOL InitMysteryControl() {
 		return TRUE;
 	}
 
-	EzSetSystemCritical(TRUE);
+	EzSetProcessCritical(TRUE);
 
-	currentStation = SetStationInteractive();
+	SetInteractive();
 	currentDesktop = SetSecureDesktop();
 
 	DebugBreakWinLogon();
@@ -212,7 +213,7 @@ void UpdateMysteryControl() {
 	EzMessagePumpAll();
 }
 void FreeMysteryControl() {
-	SetSystemCritical(FALSE);
+	EzSetProcessCritical(FALSE);
 
 	UnsetLLInputHooks();
 
