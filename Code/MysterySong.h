@@ -1,6 +1,8 @@
+// Approved 10/26/2024
+
 #pragma once
 #include <Windows.h>
-#include "EzAudio.h"
+#include "EzCpp/EzAudio.h"
 
 extern const WORD MysterySong_FormatTag;
 extern const WORD MysterySong_ChannelCount;

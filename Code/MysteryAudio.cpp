@@ -1,8 +1,10 @@
+// Approved 10/26/2024
+
 #include "MysteryAudio.h"
-#include "EzError.h"
+#include "EzCpp/EzError.h"
 #include "MysterySong.h"
-#include "EzAudio.h"
-#include "EzLL.h"
+#include "EzCpp/EzAudio.h"
+#include "EzCpp/EzLL.h"
 #include <iostream>
 
 
@@ -23,16 +25,16 @@ struct Context {
 	BYTE* buffer;
 	UINT32 position;
 };
-static EzLL contexts = { };
+static EzLL<Context*> contexts = { };
 static IMMDeviceEnumerator* deviceEnumerator = NULL;
 
 static Context* GetContextFromDeviceID(LPWSTR deviceID) {
-	UINT32 contextCount = EzLLCount(&contexts);
-	EzLLEnumStart(&contexts);
+	UINT32 contextCount = contexts.Count();
+	contexts.EnumHead();
 	for (UINT32 i = 0; i < contextCount; i++)
 	{
-		Context* context = EzLLEnumGetAs<Context>(&contexts);
-		EzLLEnumNext(&contexts);
+		Context* context = contexts.EnumGet();
+		contexts.EnumNext();
 
 		if (lstrcmp(deviceID, context->deviceID) == 0) {
 			return context;
@@ -74,7 +76,7 @@ static void AddContext(IMMDevice* device) {
 	EzAudioFillBuffer(context->client, context->renderer, context->format, context->buffer, context->bufferLength, &context->position, TRUE);
 	EzAudioStartClient(context->client);
 
-	EzLLAdd(&contexts, context);
+	contexts.InsertHead(context);
 	std::wcout << L"Added new audio player for device " << context->deviceName << std::endl;
 }
 static void DisableContext(Context* context) {
@@ -135,7 +137,7 @@ static void RemoveContext(Context* context) {
 	delete[] context->deviceName;
 	delete[] context->deviceID;
 
-	EzLLRemove(&contexts, context);
+	contexts.Remove(context);
 
 	delete context;
 }
@@ -169,12 +171,12 @@ void UpdateMysteryAudio() {
 	}
 	delete[] devices;
 
-	UINT32 contextCount = EzLLCount(&contexts);
-	EzLLEnumStart(&contexts);
+	UINT32 contextCount = contexts.Count();
+	contexts.EnumHead();
 	for (UINT32 i = 0; i < contextCount; i++)
 	{
-		Context* context = reinterpret_cast<Context*>(EzLLEnumGet(&contexts));
-		EzLLEnumNext(&contexts);
+		Context* context = contexts.EnumGet();
+		contexts.EnumNext();
 		if (!context->disabled) {
 			try {
 				EzAudioFillBuffer(context->client, context->renderer, context->format, context->buffer, context->bufferLength, &context->position, TRUE);
@@ -196,9 +198,9 @@ void UpdateMysteryAudio() {
 	}
 }
 void FreeMysteryAudio() {
-	while (EzLLCount(&contexts) > 0)
+	while (!contexts.IsEmpty())
 	{
-		Context* context = reinterpret_cast<Context*>(EzLLGetHead(&contexts));
+		Context* context = contexts.GetHead();
 		RemoveContext(context);
 	}
 	deviceEnumerator->Release();

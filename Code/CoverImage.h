@@ -1,6 +1,8 @@
+// Approved 10/26/2024
+
 #pragma once
 #include <Windows.h>
-#include "EzRenderer.h"
+#include "EzCpp/EzRenderer.h"
 
 extern const FLOAT CoverImage_DpiX;
 extern const FLOAT CoverImage_DpiY;

@@ -20,37 +20,38 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\CoverImage.h" />
-    <ClInclude Include="Code\EzAudio.h" />
-    <ClInclude Include="Code\EzError.h" />
-    <ClInclude Include="Code\EzLL.h" />
-    <ClInclude Include="Code\EzRenderer.h" />
-    <ClInclude Include="Code\EzTokens.h" />
-    <ClInclude Include="Code\EzWindow.h" />
+    <ClInclude Include="Code\EzCpp\EzAudio.h" />
+    <ClInclude Include="Code\EzCpp\EzError.h" />
+    <ClInclude Include="Code\EzCpp\EzLL.h" />
+    <ClInclude Include="Code\EzCpp\EzRenderer.h" />
+    <ClInclude Include="Code\EzCpp\EzTokens.h" />
+    <ClInclude Include="Code\EzCpp\EzWindow.h" />
     <ClInclude Include="Code\MysteryAudio.h" />
     <ClInclude Include="Code\MysteryControl.h" />
     <ClInclude Include="Code\MysteryGraphics.h" />
     <ClInclude Include="Code\MysterySong.h" />
-    <ClInclude Include="Code\program.h" />
+    <ClInclude Include="Code\Program.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\CoverImage.cpp" />
-    <ClCompile Include="Code\EzAudio.cpp" />
-    <ClCompile Include="Code\EzError.cpp" />
-    <ClCompile Include="Code\EzHelper.h" />
-    <ClCompile Include="Code\EzHelper.cpp" />
-    <ClCompile Include="Code\EzLL.cpp" />
-    <ClCompile Include="Code\EZRenderer.cpp" />
-    <ClCompile Include="Code\EzTokens.cpp" />
-    <ClCompile Include="Code\EzWindow.cpp" />
+    <ClCompile Include="Code\EzCpp\EzAudio.cpp" />
+    <ClCompile Include="Code\EzCpp\EzError.cpp" />
+    <ClCompile Include="Code\EzCpp\EzHelper.h" />
+    <ClCompile Include="Code\EzCpp\EzHelper.cpp" />
+    <ClCompile Include="Code\EzCpp\EZRenderer.cpp" />
+    <ClCompile Include="Code\EzCpp\EzTokens.cpp" />
+    <ClCompile Include="Code\EzCpp\EzWindow.cpp" />
     <ClCompile Include="Code\MysteryAudio.cpp" />
     <ClCompile Include="Code\MysteryControl.cpp" />
     <ClCompile Include="Code\MysteryGraphics.cpp" />
     <ClCompile Include="Code\MysterySong.cpp" />
-    <ClCompile Include="Code\program.cpp" />
+    <ClCompile Include="Code\Program.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
     <None Include="MysteryInstaller.bat" />
+    <None Include="MysteryUninstaller.bat" />
+    <None Include="Privilege Escalation.md" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="CoverImage.bmp" />
@@ -122,6 +123,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -137,6 +139,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -155,6 +158,7 @@
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -172,6 +176,7 @@
       <Optimization>Disabled</Optimization>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

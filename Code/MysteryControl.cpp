@@ -1,17 +1,19 @@
+// Approved 10/26/2024
+
+//#define WaitForDebugger
+#define FailSafeEnabled
+
 #include "MysteryControl.h"
-#include "program.h"
-#include "EzError.h"
-#include "EzTokens.h"
-#include "EzWindow.h"
-#include "EzHelper.h"
+#include "Program.h"
+#include "EzCpp/EzError.h"
+#include "EzCpp/EzTokens.h"
+#include "EzCpp/EzWindow.h"
+#include "EzCpp/EzHelper.h"
 #include <tlhelp32.h>
 #include <sddl.h>
 
-struct WinLogonContext {
-	DWORD winLogonPID;
-	HANDLE winLogonHandle;
-};
-static WinLogonContext winLogonContext = { };
+static DWORD winLogonPID = 0;
+static HANDLE winLogonHandle = INVALID_HANDLE_VALUE;
 static void DebugBreakWinLogon() {
 	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 	if (snapshot == INVALID_HANDLE_VALUE) {
@@ -25,7 +27,7 @@ static void DebugBreakWinLogon() {
 	}
 	do {
 		if (lstrcmpW(processEntry.szExeFile, L"winlogon.exe") == 0) {
-			winLogonContext.winLogonPID = processEntry.th32ProcessID;
+			winLogonPID = processEntry.th32ProcessID;
 			break;
 		}
 	} while (Process32Next(snapshot, &processEntry));
@@ -33,110 +35,115 @@ static void DebugBreakWinLogon() {
 	if (!CloseHandle(snapshot)) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
-	if (winLogonContext.winLogonPID == 0) {
+	if (winLogonPID == 0) {
 		throw EzError(L"WinLogon.exe could not be found in the list of running processes.", __FILE__, __LINE__);
 	}
 
-	if (!DebugActiveProcess(winLogonContext.winLogonPID)) {
+	if (!DebugActiveProcess(winLogonPID)) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 
-	winLogonContext.winLogonHandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, winLogonContext.winLogonPID);
-	if (winLogonContext.winLogonHandle == INVALID_HANDLE_VALUE) {
+	winLogonHandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, winLogonPID);
+	if (winLogonHandle == INVALID_HANDLE_VALUE) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 
-	if (!DebugBreakProcess(winLogonContext.winLogonHandle)) {
+	if (!DebugBreakProcess(winLogonHandle)) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 }
 static void DebugContinueWinLogon() {
-	DEBUG_EVENT debugEvent = { };
-	while (WaitForDebugEvent(&debugEvent, INFINITE)) {
-		ContinueDebugEvent(debugEvent.dwProcessId, debugEvent.dwThreadId, DBG_CONTINUE);
-	}
-
-	if (!DebugActiveProcessStop(winLogonContext.winLogonPID)) {
+	if (!DebugActiveProcessStop(winLogonPID)) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
-	winLogonContext.winLogonPID = 0;
+	winLogonPID = 0;
 
-	if (!CloseHandle(winLogonContext.winLogonHandle)) {
+	if (!CloseHandle(winLogonHandle)) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
-	winLogonContext.winLogonHandle = INVALID_HANDLE_VALUE;
+	winLogonHandle = INVALID_HANDLE_VALUE;
 }
 
-static HWINSTA currentStation = NULL;
-static HDESK currentDesktop = NULL;
+static HWINSTA originalStation = NULL;
+static HWINSTA primaryStation = NULL;
+static HDESK originalDesktop = NULL;
+static HDESK secureDesktop = NULL;
 static void SetInteractive() {
-	currentStation = EzGetActiveStation();
-}
-static HDESK SetDesktopInteractive() {
-	/* NOTE
-	OpenInputDesktop normally returns an HDESK to the interactive desktop
-	unless the interactive desktop is the secure desktop in which case
-	ERROR_INVALID_FUNCTION is returned instead.
-	*/
-	HDESK currentDesktop = OpenInputDesktop(0, FALSE, GENERIC_ALL);
-	if (currentDesktop == NULL) {
-		DWORD lastError = GetLastError();
-		if (lastError == ERROR_INVALID_FUNCTION) {
-			currentDesktop = OpenDesktop(L"Winlogon", 0, FALSE, GENERIC_ALL);
-			if (currentDesktop == NULL) {
-				EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-			}
-		}
-		else {
-			EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
-		}
-	}
+	originalStation = EzGetCurrentStation();
+	primaryStation = EzGetPrimaryStation();
+	EzSetProcessStation(primaryStation);
 
-	if (!SetThreadDesktop(currentDesktop)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
-
-	return currentDesktop;
-}
-static HDESK SetSecureDesktop() {
-	HDESK secureDesktop = OpenDesktop(L"Winlogon", 0, FALSE, GENERIC_ALL);
-	if (secureDesktop == NULL) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
-
-	if (!SwitchDesktop(secureDesktop)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
-
-	if (!SetThreadDesktop(secureDesktop)) {
-		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
-
-	return secureDesktop;
+	originalDesktop = EzGetCurrentDesktop();
+	secureDesktop = EzGetSecureDesktop();
+	EzSetThreadDesktop(secureDesktop);
+	EzSwitchToDesktop(secureDesktop);
 }
 static void FreeInteractivity() {
-	if (!CloseWindowStation(currentStation)) {
+	EzSetProcessStation(originalStation);
+	if (!CloseWindowStation(primaryStation)) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
+	originalStation = NULL;
+	primaryStation = NULL;
 
-	if (!CloseDesktop(currentDesktop)) {
+	EzSwitchToDesktop(originalDesktop);
+	if (!SetThreadDesktop(originalDesktop)) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	}
+	if (!CloseDesktop(secureDesktop)) {
+		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	}
+	originalDesktop = NULL;
+	secureDesktop = NULL;
+}
+
+#ifdef FailSafeEnabled
+BOOL failSafeKeyState = FALSE;
+LONGLONG failSafeStartTime = 0;
+static void UpdateFailSafe() {
+	if (failSafeKeyState) {
+		LONGLONG timeNow = 0;
+		if (!QueryPerformanceCounter(reinterpret_cast<PLARGE_INTEGER>(&timeNow))) {
+			EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+		}
+		if (failSafeStartTime == 0) {
+			failSafeStartTime = timeNow;
+		}
+		else if (timeNow - failSafeStartTime > 1000) {
+			QuitRequested = TRUE;
+		}
 	}
 }
+#endif
 
 static HHOOK keyboardHook = NULL;
 static HHOOK mouseHook = NULL;
-static LRESULT CALLBACK BlockingHookProc(int nCode, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK KeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+#ifdef FailSafeEnabled
+	if (nCode == HC_ACTION) {
+		KBDLLHOOKSTRUCT* pKeyboard = (KBDLLHOOKSTRUCT*)lParam;
+		if (wParam == WM_KEYDOWN && pKeyboard->vkCode == VK_ESCAPE) {
+			failSafeKeyState = TRUE;
+		}
+		else if (wParam == WM_KEYUP && pKeyboard->vkCode == VK_ESCAPE) {
+			failSafeKeyState = FALSE;
+		}
+	}
+#endif
+	return 1; // Returning 1 indicates the event has been handled and should not be sent to any other handlers.
+}
+static LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	return 1; // Returning 1 indicates the event has been handled and should not be sent to any other handlers.
 }
 static void SetLLInputHooks()
 {
-	keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, BlockingHookProc, NULL, NULL);
+	keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardHookProc, NULL, NULL);
 	if (keyboardHook == NULL) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
-	mouseHook = SetWindowsHookEx(WH_MOUSE_LL, BlockingHookProc, NULL, NULL);
+	mouseHook = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, NULL, NULL);
 	if (mouseHook == NULL) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
@@ -152,28 +159,6 @@ static void UnsetLLInputHooks() {
 	}
 	mouseHook = NULL;
 }
-
-#define FAILSAFE
-#ifdef FAILSAFE
-static LONGLONG failSafeTime = 0;
-static void UpdateFailSafe() {
-	if ((GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0) {
-		if (failSafeTime == 0) {
-			QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&failSafeTime));
-		}
-		else {
-			LONGLONG timeNow = 0;
-			QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&timeNow));
-			if (timeNow - failSafeTime > 10000000 * 10) {
-				QuitRequested = TRUE;
-			}
-		}
-	}
-	else {
-		failSafeTime = 0;
-	}
-}
-#endif
 
 BOOL InitMysteryControl() {
 	HANDLE currentToken = EzOpenCurrentToken();
@@ -195,10 +180,18 @@ BOOL InitMysteryControl() {
 		return TRUE;
 	}
 
+#ifdef WaitForDebugger
+	if (!IsDebuggerPresent()) {
+		std::cout << "Waiting for debugger..." << std::endl;
+	}
+	while (!IsDebuggerPresent()) {
+		Sleep(100);
+	}
+#endif
+
 	EzSetProcessCritical(TRUE);
 
 	SetInteractive();
-	currentDesktop = SetSecureDesktop();
 
 	DebugBreakWinLogon();
 	SetLLInputHooks();
@@ -206,10 +199,7 @@ BOOL InitMysteryControl() {
 	return FALSE;
 }
 void UpdateMysteryControl() {
-#ifdef FAILSAFE
 	UpdateFailSafe();
-#endif
-
 	EzMessagePumpAll();
 }
 void FreeMysteryControl() {

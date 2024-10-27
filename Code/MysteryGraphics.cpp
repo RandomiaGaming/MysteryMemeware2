@@ -1,9 +1,11 @@
+// Approved 10/26/2024
+
 #include "MysteryGraphics.h"
-#include "EzError.h"
-#include "EzLL.h"
+#include "EzCpp/EzError.h"
+#include "EzCpp/EzLL.h"
 #include "CoverImage.h"
-#include "EzWindow.h"
-#include "EzRenderer.h"
+#include "EzCpp/EzWindow.h"
+#include "EzCpp/EzRenderer.h"
 #include <iostream>
 
 struct Context {
@@ -13,32 +15,21 @@ struct Context {
 	ID2D1HwndRenderTarget* windowRenderTarget;
 	ID2D1Bitmap* mysteryImage;
 };
-static EzLL contexts = { };
+static EzLL<Context*> contexts = { };
 
 static BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
-	EzLL* monitorsLL = reinterpret_cast<EzLL*>(dwData);
-	HMONITOR* monitor = new HMONITOR();
-	*monitor = hMonitor;
-	EzLLAdd(monitorsLL, monitor);
+	EzLL<HMONITOR>* monitors = reinterpret_cast<EzLL<HMONITOR>*>(dwData);
+	monitors->InsertHead(hMonitor);
 	return TRUE;
 }
-static DWORD GetMonitors(HMONITOR** pMonitors) {
-	EzLL monitorsLL = { };
+static UINT32 GetMonitors(HMONITOR** pMonitors) {
+	EzLL<HMONITOR> monitorsLL = { };
 	if (!EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, reinterpret_cast<LPARAM>(&monitorsLL))) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 
-	UINT32 monitorCount = EzLLCount(&monitorsLL);
-	HMONITOR* monitors = new HMONITOR[monitorCount];
-	EzLLEnumStart(&monitorsLL);
-	for (UINT32 i = 0; i < monitorCount; i++)
-	{
-		HMONITOR* monitor = EzLLEnumGetAs<HMONITOR>(&monitorsLL);
-		monitors[i] = *monitor;
-		delete monitor;
-		EzLLEnumNext(&monitorsLL);
-	}
-	EzLLClear(&monitorsLL);
+	UINT32 monitorCount = monitorsLL.Count();
+	HMONITOR* monitors = monitorsLL.ToArray();
 
 	if (pMonitors == NULL) {
 		delete[] monitors;
@@ -64,12 +55,12 @@ static LRESULT WindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
 static Context* GetContextForMonitor(HMONITOR hMonitor) {
 	// Note returns a disabled context if there is no context associated with the hMonitor and there are disabled contexts availible.
 	Context* disabledContext = NULL;
-	UINT32 contextCount = EzLLCount(&contexts);
-	EzLLEnumStart(&contexts);
+	UINT32 contextCount = contexts.Count();
+	contexts.EnumHead();
 	for (UINT32 i = 0; i < contextCount; i++)
 	{
-		Context* context = EzLLEnumGetAs<Context>(&contexts);
-		EzLLEnumNext(&contexts);
+		Context* context = contexts.EnumGet();
+		contexts.EnumNext();
 
 		if (context->monitor == NULL) {
 			disabledContext = context;
@@ -108,7 +99,7 @@ static void AddContext(HMONITOR monitor) {
 
 	EzSetWindowData(context->window, context);
 
-	EzLLAdd(&contexts, context);
+	contexts.InsertHead(context);
 
 	std::wcout << L"Adding window for monitor ("
 		<< windowSettings.InitialX << ", "
@@ -166,7 +157,7 @@ static void RemoveContext(Context* context) {
 	}
 	context->window = NULL;
 	context->monitor = NULL;
-	EzLLRemove(&contexts, context);
+	contexts.Remove(context);
 }
 
 void InitMysteryGraphics() {
@@ -189,12 +180,12 @@ void UpdateMysteryGraphics() {
 		}
 	}
 
-	UINT32 contextCount = EzLLCount(&contexts);
-	EzLLEnumStart(&contexts);
+	UINT32 contextCount = contexts.Count();
+	contexts.EnumHead();
 	for (UINT32 i = 0; i < contextCount; i++)
 	{
-		Context* context = EzLLEnumGetAs<Context>(&contexts);
-		EzLLEnumNext(&contexts);
+		Context* context = contexts.EnumGet();
+		contexts.EnumNext();
 
 		if (context->monitor == NULL) {
 			continue;
@@ -216,12 +207,12 @@ void UpdateMysteryGraphics() {
 
 	EzMessagePumpAll();
 
-	contextCount = EzLLCount(&contexts);
-	EzLLEnumStart(&contexts);
+	contextCount = contexts.Count();
+	contexts.EnumHead();
 	for (UINT32 i = 0; i < contextCount; i++)
 	{
-		Context* context = EzLLEnumGetAs<Context>(&contexts);
-		EzLLEnumNext(&contexts);
+		Context* context = contexts.EnumGet();
+		contexts.EnumNext();
 
 		context->windowRenderTarget->BeginDraw();
 		context->windowRenderTarget->Clear();
@@ -231,9 +222,9 @@ void UpdateMysteryGraphics() {
 	}
 }
 void FreeMysteryGraphics() {
-	while (EzLLCount(&contexts) > 0)
+	while (!contexts.IsEmpty())
 	{
-		Context* context = reinterpret_cast<Context*>(EzLLGetHead(&contexts));
+		Context* context = contexts.GetHead();
 		RemoveContext(context);
 	}
 	if (!UnregisterClass(L"MysteryWindowClass", NULL)) {
