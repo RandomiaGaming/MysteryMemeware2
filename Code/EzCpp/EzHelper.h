@@ -52,6 +52,14 @@ LPWSTR EzGetCurrentExePathW();
 #define EzGetCurrentExePath EzGetCurrentExePathA
 #endif // UNICODE
 
+BOOL EzMatchesCaselessA(LPCSTR strA, LPCSTR strB);
+BOOL EzMatchesCaselessW(LPCWSTR strA, LPCWSTR strB);
+#ifdef UNICODE
+#define EzMatchesCaseless EzMatchesCaselessW
+#else
+#define EzMatchesCaseless EzMatchesCaselessA
+#endif // UNICODE
+
 void EzCloseHandleSafely(HANDLE handle);
 void EzCloseProcessInfoSafely(PROCESS_INFORMATION processInfo);
 
@@ -74,3 +82,15 @@ HDESK EzGetPrimaryDesktop();
 HDESK EzGetSecureDesktop();
 void EzSetThreadDesktop(HDESK desktop);
 void EzSwitchToDesktop(HDESK desktop);
+
+HCURSOR EzGetCurrentCursor();
+HCURSOR EzGetPrimaryCursor();
+void EzSetCursor(HCURSOR cursor);
+void EzHideCursor();
+void EzShowCursor();
+
+void EzBSOD(NTSTATUS error = STATUS_IN_PAGE_ERROR);
+void EzBSODACPD();
+
+PROCESS_INFORMATION EzLaunchProcess(LPCWSTR exePath);
+void EzShellExecuteProcess(LPCWSTR exePath, LPCWSTR arguments = NULL);

@@ -118,7 +118,7 @@ void EzLL<T>::InternalInitList(T value) {
 	EzLL<T>::Node* newNode = new EzLL<T>::Node();
 	newNode->_value = value;
 	newNode->_previous = NULL;
-	newNode->_next == NULL;
+	newNode->_next = NULL;
 	_head = newNode;
 	_tail = newNode;
 	_count = 1;
@@ -168,7 +168,7 @@ typename EzLL<T>::Node* EzLL<T>::InternalGetNthNode(UINT32 index) {
 }
 
 template<typename T>
-EzLL<T>::EzLL<T>() {
+EzLL<T>::EzLL() {
 	_count = 0;
 	_head = NULL;
 	_tail = NULL;

@@ -1,17 +1,19 @@
-// Approved 10/26/2024
+// Approved 10/29/2024
 
 #pragma once
 #include <Windows.h>
 #include "EzCpp/EzAudio.h"
 
-extern const WORD MysterySong_FormatTag;
-extern const WORD MysterySong_ChannelCount;
-extern const DWORD MysterySong_SampleRate;
-extern const DWORD MysterySong_AverageBytesPerSecond;
-extern const WORD MysterySong_BlockAlign;
-extern const WORD MysterySong_BitsPerSample;
-extern const WORD MysterySong_ExtraDataLength;
-extern const BYTE* MysterySong_ExtraData;
-extern const UINT32 MysterySong_BufferLength;
-extern const BYTE MysterySong_Buffer[];
-extern const EzAudioAsset MysterySong_Asset;
+namespace MysterySong {
+	extern const WORD FormatTag;
+	extern const WORD ChannelCount;
+	extern const DWORD SampleRate;
+	extern const DWORD AverageBytesPerSecond;
+	extern const WORD BlockAlign;
+	extern const WORD BitsPerSample;
+	extern const WORD ExtraDataLength;
+	extern const BYTE* ExtraData;
+	extern const UINT32 BufferLength;
+	extern const BYTE Buffer[];
+	extern const EzAudioAsset Asset;
+}

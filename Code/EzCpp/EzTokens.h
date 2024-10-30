@@ -147,7 +147,6 @@ void EzLogTokenInfo(HANDLE token, std::wostream& outputStream);
 // Working with the current token
 HANDLE EzOpenCurrentToken();
 HANDLE EzDuplicateCurrentToken();
-void EzCloseHandleSafely(HANDLE token);
 
 // Impersonating tokens
 void EzImpersonate(HANDLE token);

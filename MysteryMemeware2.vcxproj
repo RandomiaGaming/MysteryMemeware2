@@ -19,39 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Code\CoverImage.h" />
-    <ClInclude Include="Code\EzCpp\EzAudio.h" />
-    <ClInclude Include="Code\EzCpp\EzError.h" />
-    <ClInclude Include="Code\EzCpp\EzLL.h" />
-    <ClInclude Include="Code\EzCpp\EzRenderer.h" />
-    <ClInclude Include="Code\EzCpp\EzTokens.h" />
-    <ClInclude Include="Code\EzCpp\EzWindow.h" />
-    <ClInclude Include="Code\MysteryAudio.h" />
-    <ClInclude Include="Code\MysteryControl.h" />
-    <ClInclude Include="Code\MysteryGraphics.h" />
-    <ClInclude Include="Code\MysterySong.h" />
-    <ClInclude Include="Code\Program.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Code\CoverImage.cpp" />
-    <ClCompile Include="Code\EzCpp\EzAudio.cpp" />
-    <ClCompile Include="Code\EzCpp\EzError.cpp" />
-    <ClCompile Include="Code\EzCpp\EzHelper.h" />
-    <ClCompile Include="Code\EzCpp\EzHelper.cpp" />
-    <ClCompile Include="Code\EzCpp\EZRenderer.cpp" />
-    <ClCompile Include="Code\EzCpp\EzTokens.cpp" />
-    <ClCompile Include="Code\EzCpp\EzWindow.cpp" />
-    <ClCompile Include="Code\MysteryAudio.cpp" />
-    <ClCompile Include="Code\MysteryControl.cpp" />
-    <ClCompile Include="Code\MysteryGraphics.cpp" />
-    <ClCompile Include="Code\MysterySong.cpp" />
-    <ClCompile Include="Code\Program.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include=".gitignore" />
-    <None Include="MysteryInstaller.bat" />
-    <None Include="MysteryUninstaller.bat" />
-    <None Include="Privilege Escalation.md" />
+    <None Include="Documentation\AttackMethods.md" />
+    <None Include="Documentation\Privilege Escalation.md" />
+    <None Include="Documentation\PrivilegeEscalation.md" />
+    <None Include="Documentation\UtilmanInjection.md" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="CoverImage.bmp" />
@@ -63,6 +35,39 @@
   </ItemGroup>
   <ItemGroup>
     <Xml Include="MysteryTask (UNUSED).xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Code\MysteryImage.cpp" />
+    <ClCompile Include="Code\EzCpp\EzAudio.cpp" />
+    <ClCompile Include="Code\EzCpp\EzError.cpp" />
+    <ClCompile Include="Code\EzCpp\EzHelper.cpp" />
+    <ClCompile Include="Code\EzCpp\EZRenderer.cpp" />
+    <ClCompile Include="Code\EzCpp\EzTokens.cpp" />
+    <ClCompile Include="Code\EzCpp\EzWindow.cpp" />
+    <ClCompile Include="Code\MysteryAudio.cpp" />
+    <ClCompile Include="Code\MysteryEscalation.cpp" />
+    <ClCompile Include="Code\MysterySupervisor.cpp" />
+    <ClCompile Include="Code\MysteryGraphics.cpp" />
+    <ClCompile Include="Code\MysteryInstaller.cpp" />
+    <ClCompile Include="Code\MysterySong.cpp" />
+    <ClCompile Include="Code\MysteryMemeware.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Code\MysteryImage.h" />
+    <ClInclude Include="Code\EzCpp\EzAudio.h" />
+    <ClInclude Include="Code\EzCpp\EzError.h" />
+    <ClInclude Include="Code\EzCpp\EzHelper.h" />
+    <ClInclude Include="Code\EzCpp\EzLL.h" />
+    <ClInclude Include="Code\EzCpp\EzRenderer.h" />
+    <ClInclude Include="Code\EzCpp\EzTokens.h" />
+    <ClInclude Include="Code\EzCpp\EzWindow.h" />
+    <ClInclude Include="Code\MysteryAudio.h" />
+    <ClInclude Include="Code\MysteryEscalation.h" />
+    <ClInclude Include="Code\MysterySupervisor.h" />
+    <ClInclude Include="Code\MysteryGraphics.h" />
+    <ClInclude Include="Code\MysteryInstaller.h" />
+    <ClInclude Include="Code\MysterySong.h" />
+    <ClInclude Include="Code\MysteryMemeware.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

@@ -1,6 +1,7 @@
 // Approved 10/26/2024
 
 #include "EzHelper.h"
+#include "EzTokens.h"
 #include "EzError.h"
 #include <iomanip>
 
@@ -266,6 +267,33 @@ LPWSTR EzGetCurrentExePathW() {
 	}
 }
 
+BOOL EzMatchesCaselessA(LPCSTR strA, LPCSTR strB) {
+	UINT32 strALen = lstrlenA(strA);
+	UINT32 strBLen = lstrlenA(strB);
+	if (strALen != strBLen) {
+		return FALSE;
+	}
+	for (UINT32 i = 0; i < strALen; i++) {
+		if (tolower(strA[i]) != tolower(strB[i])) {
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+BOOL EzMatchesCaselessW(LPCWSTR strA, LPCWSTR strB) {
+	UINT32 strALen = lstrlenW(strA);
+	UINT32 strBLen = lstrlenW(strB);
+	if (strALen != strBLen) {
+		return FALSE;
+	}
+	for (UINT32 i = 0; i < strALen; i++) {
+		if (tolower(strA[i]) != tolower(strB[i])) {
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
 void EzCloseHandleSafely(HANDLE handle) {
 	if (!CloseHandle(handle)) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
@@ -405,6 +433,104 @@ void EzSetThreadDesktop(HDESK desktop) {
 }
 void EzSwitchToDesktop(HDESK desktop) {
 	if (!SwitchDesktop(desktop)) {
+		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	}
+}
+
+HCURSOR EzGetCurrentCursor() {
+	// This function will never fail
+	// A return of NULL simply means the mouse is invisible right now
+	return GetCursor();
+}
+HCURSOR EzGetPrimaryCursor() {
+	HCURSOR cursor = LoadCursorW(NULL, IDC_ARROW);
+	if (cursor == NULL) {
+		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	}
+	return cursor;
+}
+void EzSetCursor(HCURSOR cursor) {
+	// This function will never fail
+	// The return value simply represents the previous cursor value
+	SetCursor(cursor);
+}
+void EzHideCursor() {
+	int cursorCount = 1;
+	while (cursorCount > 0) {
+		cursorCount = ShowCursor(FALSE);
+	}
+}
+void EzShowCursor() {
+	int cursorCount = 0;
+	while (cursorCount <= 0) {
+		cursorCount = ShowCursor(TRUE);
+	}
+}
+
+void EzBSOD(NTSTATUS errorCode) {
+	typedef struct _UNICODE_STRING {
+		USHORT Length;
+		USHORT MaximumLength;
+		PWSTR Buffer;
+	} UNICODE_STRING, * PUNICODE_STRING;
+	typedef enum _HARDERROR_RESPONSE_OPTION {
+		OptionAbortRetryIgnore = 0,
+		OptionOk = 1,
+		OptionOkCancel = 2,
+		OptionRetryCancel = 3,
+		OptionYesNo = 4,
+		OptionYesNoCancel = 5,
+		OptionShutdownSystem = 6
+	} HARDERROR_RESPONSE_OPTION, * PHARDERROR_RESPONSE_OPTION;
+	typedef enum _HARDERROR_RESPONSE {
+		ResponseReturnToCaller = 0,
+		ResponseNotHandled = 1,
+		ResponseAbort = 2,
+		ResponseCancel = 3,
+		ResponseIgnore = 4,
+		ResponseNo = 5,
+		ResponseOk = 6,
+		ResponseRetry = 7,
+		ResponseYes = 8
+	} HARDERROR_RESPONSE, * PHARDERROR_RESPONSE;
+	typedef NTSTATUS(*PNtRaiseHardError)(NTSTATUS ErrorStatus, ULONG NumberOfParameters, PUNICODE_STRING UnicodeStringParameterMask, PVOID* Parameters, HARDERROR_RESPONSE_OPTION ResponseOption, PHARDERROR_RESPONSE Response);
+
+	NTSTATUS nt = 0;
+
+	HANDLE currentToken = EzOpenCurrentToken();
+	EzEnableAllPrivileges(currentToken);
+	EzCloseHandleSafely(currentToken);
+
+	PNtRaiseHardError NtRaiseHardError = reinterpret_cast<PNtRaiseHardError>(EzGetFunctionAddressW(L"NtRaiseHardError", L"ntdll.dll"));
+	HARDERROR_RESPONSE response;
+	nt = NtRaiseHardError(0xc0000022, 0, NULL, NULL, HARDERROR_RESPONSE_OPTION::OptionShutdownSystem, &response);
+	if (FAILED(nt)) {
+		EzError::ThrowFromNT(nt, __FILE__, __LINE__);
+	}
+}
+void EzBSODACPD() {
+	HANDLE currentToken = EzOpenCurrentToken();
+	EzEnableAllPrivileges(currentToken);
+	EzCloseHandleSafely(currentToken);
+
+	EzSetProcessCritical(TRUE);
+	ExitProcess(0);
+}
+
+PROCESS_INFORMATION EzLaunchProcess(LPCWSTR exePath) {
+	STARTUPINFO si = {};
+	si.cb = sizeof(STARTUPINFO);
+
+	PROCESS_INFORMATION output = {};
+
+	if (!CreateProcessW(exePath, NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &output)) {
+		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	}
+
+	return output;
+}
+void EzShellExecuteProcess(LPCWSTR exePath, LPCWSTR arguments) {
+	if (ShellExecuteW(NULL, L"open", exePath, arguments, NULL, SW_NORMAL) == NULL) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 }

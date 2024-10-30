@@ -1,7 +1,9 @@
-// Approved 10/26/2024
+// Approved 10/29/2024
 
 #pragma once
 
-void InitMysteryGraphics();
-void UpdateMysteryGraphics();
-void FreeMysteryGraphics();
+namespace MysteryGraphics {
+	void Init();
+	void Update();
+	void Free();
+}

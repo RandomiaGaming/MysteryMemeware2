@@ -1,14 +1,15 @@
-// Approved 10/26/2024
+// Approved 10/29/2024
 
 #include "MysteryGraphics.h"
+#include "MysteryImage.h"
 #include "EzCpp/EzError.h"
 #include "EzCpp/EzLL.h"
-#include "CoverImage.h"
 #include "EzCpp/EzWindow.h"
 #include "EzCpp/EzRenderer.h"
+#include "EzCpp//EzHelper.h"
 #include <iostream>
 
-struct Context {
+static struct Context {
 	HMONITOR monitor;
 	HWND window;
 	ID2D1Factory* factory;
@@ -95,11 +96,13 @@ static void AddContext(HMONITOR monitor) {
 	EzHwndRendererSettings rendererSettings = { };
 	EzCreateHwndRenderer(context->window, &rendererSettings, &context->factory, &context->windowRenderTarget);
 
-	context->mysteryImage = EzLoadBitmap(context->windowRenderTarget, &CoverImage_Asset);
+	context->mysteryImage = EzLoadBitmap(context->windowRenderTarget, &MysteryImage::Asset);
 
 	EzSetWindowData(context->window, context);
 
 	contexts.InsertHead(context);
+
+	EzSetCursor(NULL);
 
 	std::wcout << L"Adding window for monitor ("
 		<< windowSettings.InitialX << ", "
@@ -139,6 +142,8 @@ static void ReinitContext(Context* context, HMONITOR monitor) {
 
 	ShowWindow(context->window, SW_SHOWNORMAL);
 
+	EzSetCursor(NULL);
+
 	std::wcout << L"Reusing window for monitor ("
 		<< x << ", "
 		<< y << ", "
@@ -160,13 +165,13 @@ static void RemoveContext(Context* context) {
 	contexts.Remove(context);
 }
 
-void InitMysteryGraphics() {
+void MysteryGraphics::Init() {
 	EzClassSettings classSettings = { };
 	classSettings.WndProc = WindowProcedure;
 	classSettings.Name = L"MysteryWindowClass";
 	EzRegisterClass(&classSettings);
 }
-void UpdateMysteryGraphics() {
+void MysteryGraphics::Update() {
 	HMONITOR* monitors = NULL;
 	UINT32 monitorCount = GetMonitors(&monitors);
 	for (UINT32 i = 0; i < monitorCount; i++)
@@ -204,6 +209,7 @@ void UpdateMysteryGraphics() {
 			DisableContext(context);
 		}
 	}
+	delete[] monitors;
 
 	EzMessagePumpAll();
 
@@ -221,13 +227,14 @@ void UpdateMysteryGraphics() {
 		context->windowRenderTarget->EndDraw();
 	}
 }
-void FreeMysteryGraphics() {
+void MysteryGraphics::Free() {
 	while (!contexts.IsEmpty())
 	{
 		Context* context = contexts.GetHead();
 		RemoveContext(context);
 	}
-	if (!UnregisterClass(L"MysteryWindowClass", NULL)) {
+	EzMessagePumpAll();
+	if (!UnregisterClassW(L"MysteryWindowClass", NULL)) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 }

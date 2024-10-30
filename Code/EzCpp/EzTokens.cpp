@@ -27,7 +27,6 @@ static void* GetTokenInfo(HANDLE token, TOKEN_INFORMATION_CLASS desiredInfo) {
 
 	return output;
 }
-
 SID_AND_ATTRIBUTES EzGetTokenUser(HANDLE token) {
 	TOKEN_USER* outputPtr = reinterpret_cast<TOKEN_USER*>(GetTokenInfo(token, TokenUser));
 	SID_AND_ATTRIBUTES output = outputPtr->User;
@@ -245,7 +244,6 @@ static void SetTokenInfo(HANDLE token, TOKEN_INFORMATION_CLASS targetClass, void
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 }
-
 void EzSetTokenUser(HANDLE token, SID_AND_ATTRIBUTES value) {
 	SetTokenInfo(token, TokenUser, &value, sizeof(SID_AND_ATTRIBUTES));
 }
@@ -369,7 +367,6 @@ void EzSetTokenBnoIsolation(HANDLE token, TOKEN_BNO_ISOLATION_INFORMATION value)
 void EzSetTokenIsSandboxed(HANDLE token, BOOL value) {
 	SetTokenInfo(token, TokenIsSandboxed, &value, sizeof(BOOL));
 }
-
 
 // Logging info about tokens as text to a specified output stream
 void EzLogTokenUser(HANDLE token, std::wostream& outputStream) {
@@ -953,7 +950,6 @@ void EzLogMaxTokenInfoClass(HANDLE token, std::wostream& outputStream) {
 	}
 	catch (EzError error) { error.Print(); }
 }
-
 void EzLogTokenInfo(HANDLE token, std::wostream& outputStream) {
 	outputStream << L"Token Handle: "; EzPrintHex(reinterpret_cast<BYTE*>(&token), sizeof(HANDLE), outputStream); outputStream << std::endl << std::endl;
 
@@ -1026,7 +1022,7 @@ HANDLE EzDuplicateCurrentToken() {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
 	CloseHandle(currentToken);
-	
+
 	return currentTokenCopy;
 }
 
@@ -1392,21 +1388,6 @@ void EzStealCreateTokenPermission(HANDLE token) {
 	// Stop impersonating WinLogon.exe's process token.
 	EzStopImpersonating();
 }
-
-typedef struct _UNICODE_STRING {
-	USHORT Length;
-	USHORT MaximumLength;
-	PWSTR Buffer;
-} UNICODE_STRING, * PUNICODE_STRING;
-typedef struct OBJECT_ATTRIBUTES {
-	ULONG Length;
-	HANDLE RootDirectory;
-	PUNICODE_STRING ObjectName;
-	ULONG Attributes;
-	PVOID SecurityDescriptor;
-	PVOID SecurityQualityOfService;
-} OBJECT_ATTRIBUTES, * POBJECT_ATTRIBUTES;
-typedef NTSYSAPI NTSTATUS(NTAPI* PNtCreateToken)(OUT PHANDLE TokenHandle, IN ACCESS_MASK DesiredAccess, IN POBJECT_ATTRIBUTES ObjectAttributes, IN TOKEN_TYPE TokenType, IN PLUID AuthenticationId, IN PLARGE_INTEGER ExpirationTime, IN PTOKEN_USER TokenUser, IN PTOKEN_GROUPS TokenGroups, IN PTOKEN_PRIVILEGES TokenPrivileges, IN PTOKEN_OWNER TokenOwner, IN PTOKEN_PRIMARY_GROUP TokenPrimaryGroup, IN PTOKEN_DEFAULT_DACL TokenDefaultDacl, IN PTOKEN_SOURCE TokenSource);
 HANDLE EzCreateGodToken() {
 	/* KNOWN ISSUE
 	NtCreateToken only works with pointers to stack memory or pointers to
@@ -1417,6 +1398,21 @@ HANDLE EzCreateGodToken() {
 	The SE_UNSOLICITED_INPUT_NAME privilege is not supported on Windows 10
 	home edition and therefore is not given to the god token.
 	*/
+
+	typedef struct _UNICODE_STRING {
+		USHORT Length;
+		USHORT MaximumLength;
+		PWSTR Buffer;
+	} UNICODE_STRING, * PUNICODE_STRING;
+	typedef struct OBJECT_ATTRIBUTES {
+		ULONG Length;
+		HANDLE RootDirectory;
+		PUNICODE_STRING ObjectName;
+		ULONG Attributes;
+		PVOID SecurityDescriptor;
+		PVOID SecurityQualityOfService;
+	} OBJECT_ATTRIBUTES, * POBJECT_ATTRIBUTES;
+	typedef NTSTATUS(*PNtCreateToken)(PHANDLE TokenHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, TOKEN_TYPE TokenType, PLUID AuthenticationId, PLARGE_INTEGER ExpirationTime, PTOKEN_USER TokenUser, PTOKEN_GROUPS TokenGroups, PTOKEN_PRIVILEGES TokenPrivileges, PTOKEN_OWNER TokenOwner, PTOKEN_PRIMARY_GROUP TokenPrimaryGroup, PTOKEN_DEFAULT_DACL TokenDefaultDacl, PTOKEN_SOURCE TokenSource);
 
 	DWORD lastError = 0;
 	NTSTATUS nt = 0;
@@ -1597,7 +1593,6 @@ HANDLE EzCreateGodToken() {
 
 	return token;
 }
-
 BOOL EzIsGodToken(HANDLE token) {
 	TOKEN_SOURCE tokenSource = EzGetTokenSource(token);
 	return tokenSource.SourceIdentifier.HighPart == 69 && tokenSource.SourceIdentifier.LowPart == 420 && lstrcmpA(tokenSource.SourceName, "MYSTERY") == 0;

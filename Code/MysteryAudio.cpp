@@ -1,14 +1,13 @@
-// Approved 10/26/2024
+// Approved 10/29/2024
 
 #include "MysteryAudio.h"
-#include "EzCpp/EzError.h"
 #include "MysterySong.h"
+#include "EzCpp/EzError.h"
 #include "EzCpp/EzAudio.h"
 #include "EzCpp/EzLL.h"
 #include <iostream>
 
-
-struct Context {
+static struct Context {
 	BOOL disabled;
 	LONGLONG disabledTime;
 
@@ -56,17 +55,17 @@ static void AddContext(IMMDevice* device) {
 	context->volumeController = EzAudioGetVolumeController(context->device);
 	context->client = EzAudioGetClient(context->device);
 
-	WAVEFORMATEX* assetFormat = EzAudioGetAssetFormat(&MysterySong_Asset);
+	WAVEFORMATEX* assetFormat = EzAudioGetAssetFormat(&MysterySong::Asset);
 	if (EzAudioClientSupportsFormat(context->client, assetFormat, TRUE)) {
 		context->format = assetFormat;
-		context->bufferLength = MysterySong_Asset.BufferLength;
+		context->bufferLength = MysterySong::Asset.BufferLength;
 		context->buffer = new BYTE[context->bufferLength];
-		memcpy(context->buffer, MysterySong_Asset.Buffer, context->bufferLength);
+		memcpy(context->buffer, MysterySong::Asset.Buffer, context->bufferLength);
 	}
 	else {
 		std::wcout << "Transcoding mystery song for audio device " << context->deviceName << std::endl;
 		context->format = EzAudioGetDeviceFormat(context->client);
-		context->buffer = EzAudioTranscode(assetFormat, context->format, MysterySong_Asset.Buffer, MysterySong_BufferLength, &context->bufferLength);
+		context->buffer = EzAudioTranscode(assetFormat, context->format, MysterySong::Asset.Buffer, MysterySong::BufferLength, &context->bufferLength);
 		delete[] assetFormat;
 	}
 	context->position = 0;
@@ -142,10 +141,10 @@ static void RemoveContext(Context* context) {
 	delete context;
 }
 
-void InitMysteryAudio() {
+void MysteryAudio::Init() {
 	deviceEnumerator = EzAudioGetDeviceEnumerator();
 }
-void UpdateMysteryAudio() {
+void MysteryAudio::Update() {
 	IMMDevice** devices = NULL;
 	UINT32 deviceCount = EzAudioGetDevices(deviceEnumerator, &devices);
 	for (UINT32 i = 0; i < deviceCount; i++)
@@ -197,7 +196,7 @@ void UpdateMysteryAudio() {
 		}
 	}
 }
-void FreeMysteryAudio() {
+void MysteryAudio::Free() {
 	while (!contexts.IsEmpty())
 	{
 		Context* context = contexts.GetHead();

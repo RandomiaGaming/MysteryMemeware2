@@ -85,7 +85,7 @@ HWND EzCreateWindow(const EzWindowSettings* settings) {
 		title = settings->Title;
 	}
 
-	LPCWSTR className;
+	LPCWSTR className = NULL;
 	if (settings->ClassName == NULL) {
 		className = EzDefaultClassName;
 	}
@@ -146,11 +146,8 @@ HWND EzCreateWindow(const EzWindowSettings* settings) {
 	if (settings->ClassAtom != 0) {
 		className = MAKEINTATOM(settings->ClassAtom);
 	}
-	else {
-		className = settings->ClassName;
-	}
 
-	HWND output = CreateWindowEx(
+	HWND output = CreateWindowExW(
 		extendedStyles,
 		className,
 		title,
