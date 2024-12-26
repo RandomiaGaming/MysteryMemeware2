@@ -1,4 +1,4 @@
-// Approved 10/26/2024
+// Approved 11/14/2024
 
 #include "EzTokens.h"
 #include "EzError.h"
@@ -1072,7 +1072,7 @@ void EzImpersonateWinLogon() {
 	CloseHandle(snapshot);
 
 	if (winLogonPID == 0) {
-		throw EzError(L"WinLogon.exe could not be found in the list of running processes.", __FILE__, __LINE__);
+		throw EzError("WinLogon.exe could not be found in the list of running processes.", __FILE__, __LINE__);
 	}
 
 	HANDLE winLogon = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, winLogonPID);
@@ -1129,7 +1129,7 @@ void EzImpersonateLsass() {
 	CloseHandle(snapshot);
 
 	if (lsassPID == 0) {
-		throw EzError(L"Lsass.exe could not be found in the list of running processes.", __FILE__, __LINE__);
+		throw EzError("Lsass.exe could not be found in the list of running processes.", __FILE__, __LINE__);
 	}
 
 	HANDLE lsass = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, lsassPID);
@@ -1349,7 +1349,7 @@ void EzMakeTokenInteractive(HANDLE token) {
 	// Get current session id.
 	DWORD activeConsoleSessionId = WTSGetActiveConsoleSessionId();
 	if (activeConsoleSessionId == 0xFFFFFFFF) {
-		throw EzError(L"Could not create an interactive token because there is no active session currently.", __FILE__, __LINE__);
+		throw EzError("Could not create an interactive token because there is no active session currently.", __FILE__, __LINE__);
 	}
 
 	// Change the session ID of the token to the current session ID.

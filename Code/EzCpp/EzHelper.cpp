@@ -1,8 +1,9 @@
-// Approved 10/26/2024
+// Approved 11/14/2024
 
 #include "EzHelper.h"
 #include "EzTokens.h"
 #include "EzError.h"
+#include "EzLL.h"
 #include <iomanip>
 
 void EzPrintHexA(void* value, UINT32 length, std::ostream& outputStream) {
@@ -407,7 +408,7 @@ HDESK EzGetPrimaryDesktop() {
 	if (desktop == NULL) {
 		DWORD lastError = GetLastError();
 		if (lastError == ERROR_INVALID_FUNCTION) {
-			desktop = OpenDesktop(L"Winlogon", 0, FALSE, GENERIC_ALL);
+			desktop = OpenDesktopW(L"Winlogon", 0, FALSE, GENERIC_ALL);
 			if (desktop == NULL) {
 				EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 			}
@@ -503,7 +504,7 @@ void EzBSOD(NTSTATUS errorCode) {
 
 	PNtRaiseHardError NtRaiseHardError = reinterpret_cast<PNtRaiseHardError>(EzGetFunctionAddressW(L"NtRaiseHardError", L"ntdll.dll"));
 	HARDERROR_RESPONSE response;
-	nt = NtRaiseHardError(0xc0000022, 0, NULL, NULL, HARDERROR_RESPONSE_OPTION::OptionShutdownSystem, &response);
+	nt = NtRaiseHardError(errorCode, 0, NULL, NULL, HARDERROR_RESPONSE_OPTION::OptionShutdownSystem, &response);
 	if (FAILED(nt)) {
 		EzError::ThrowFromNT(nt, __FILE__, __LINE__);
 	}
@@ -529,8 +530,35 @@ PROCESS_INFORMATION EzLaunchProcess(LPCWSTR exePath) {
 
 	return output;
 }
-void EzShellExecuteProcess(LPCWSTR exePath, LPCWSTR arguments) {
-	if (ShellExecuteW(NULL, L"open", exePath, arguments, NULL, SW_NORMAL) == NULL) {
+void EzShellExecuteProcess(LPCWSTR exePath, LPCWSTR arguments, BOOL hide) {
+	INT nShowCmd = SW_NORMAL;
+	if (hide) {
+		nShowCmd = SW_HIDE;
+	}
+	if (ShellExecuteW(NULL, L"run", exePath, arguments, NULL, nShowCmd) == NULL) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 	}
+}
+
+static BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
+	EzLL<HMONITOR>* monitors = reinterpret_cast<EzLL<HMONITOR>*>(dwData);
+	monitors->InsertHead(hMonitor);
+	return TRUE;
+}
+UINT32 GetMonitors(HMONITOR** output) {
+	EzLL<HMONITOR> monitorsLL = { };
+	if (!EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, reinterpret_cast<LPARAM>(&monitorsLL))) {
+		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
+	}
+
+	UINT32 monitorCount = monitorsLL.Count();
+	HMONITOR* monitors = monitorsLL.ToArray();
+
+	if (output == NULL) {
+		delete[] monitors;
+	}
+	else {
+		*output = monitors;
+	}
+	return monitorCount;
 }

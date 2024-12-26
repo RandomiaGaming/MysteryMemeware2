@@ -1,4 +1,4 @@
-// Approved 10/25/2024
+// Approved 11/14/2024
 
 #pragma once
 #include "EzError.h"
@@ -68,19 +68,19 @@ public:
 template<typename T>
 void EzLL<T>::InternalThrowIfEmpty() {
 	if (IsEmpty()) {
-		throw EzError(L"Action cannot be preformed while the EzLL is empty.", __FILE__, __LINE__);
+		throw EzError("Action cannot be preformed while the EzLL is empty.", __FILE__, __LINE__);
 	}
 }
 template<typename T>
 void EzLL<T>::InternalThrowOnIndex(UINT32 index) {
 	if (index >= _count) {
-		throw EzError(L"index was outside the bounds of the EzLL.", __FILE__, __LINE__);
+		throw EzError("index was outside the bounds of the EzLL.", __FILE__, __LINE__);
 	}
 }
 template<typename T>
 void EzLL<T>::InternalThrowIfReset() {
 	if (IsEnumReset()) {
-		throw EzError(L"Action cannot be preformed while enumerator is not set.", __FILE__, __LINE__);
+		throw EzError("Action cannot be preformed while enumerator is not set.", __FILE__, __LINE__);
 	}
 }
 
@@ -206,12 +206,10 @@ void EzLL<T>::Remove(T value) {
 template<typename T>
 T* EzLL<T>::ToArray() {
 	T* output = new T[_count];
-	UINT32 index = 0;
 	EzLL<T>::Node* currentNode = _head;
-	while (currentNode != NULL) {
-		output[index] = currentNode->_value;
+	for (UINT32 i = 0; i < _count; i++) {
+		output[i] = currentNode->_value;
 		currentNode = currentNode->_next;
-		index++;
 	}
 	return output;
 }

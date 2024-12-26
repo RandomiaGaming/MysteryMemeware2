@@ -5,4 +5,5 @@
 namespace MysteryInstaller {
 	void Install();
 	void Uninstall();
+	void Repair();
 }

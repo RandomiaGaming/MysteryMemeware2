@@ -37,6 +37,8 @@
     <Xml Include="MysteryTask (UNUSED).xml" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Code\EzCpp\EzConsole.cpp" />
+    <ClCompile Include="Code\EzCpp\EzFiles.cpp" />
     <ClCompile Include="Code\MysteryImage.cpp" />
     <ClCompile Include="Code\EzCpp\EzAudio.cpp" />
     <ClCompile Include="Code\EzCpp\EzError.cpp" />
@@ -53,6 +55,8 @@
     <ClCompile Include="Code\MysteryMemeware.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Code\EzCpp\EzConsole.h" />
+    <ClInclude Include="Code\EzCpp\EzFiles.h" />
     <ClInclude Include="Code\MysteryImage.h" />
     <ClInclude Include="Code\EzCpp\EzAudio.h" />
     <ClInclude Include="Code\EzCpp\EzError.h" />
@@ -68,6 +72,9 @@
     <ClInclude Include="Code\MysteryInstaller.h" />
     <ClInclude Include="Code\MysterySong.h" />
     <ClInclude Include="Code\MysteryMemeware.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Code\EzCpp\EzStyleGuide.txt" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

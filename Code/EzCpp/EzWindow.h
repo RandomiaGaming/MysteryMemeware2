@@ -1,4 +1,4 @@
-// Approved 10/26/2024
+// Approved 11/14/2024
 
 // KNOWN ISSUE: The loading cursor (IDC_APPSTARTING) which displays when starting debugging is a glitch in Visual Studio not
 // an issue with EZWindow. That's why the loading cursor persists even when you switch to unrelated apps like file explorer.

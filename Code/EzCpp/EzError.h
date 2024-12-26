@@ -1,57 +1,44 @@
-// Approved 10/26/2024
+// Approved 11/14/2024
+
+// KNOWN ISSUE
+// You could go to VcxProj > Properties > Configuration Properties > C/C++ > Code Generation > Enable C++ Exceptions
+// and set it to "Yes with SEH Exceptions (/EHa)" however this will cause SEH exceptions to propigate up the call stack
+// as typeless exceptions which can only be caught by a (...) which is basically useless
+// Instead use SetSEHandler()
 
 #pragma once
 #include <Windows.h>
-
-// Note On SEH Exceptions:
-// To ensure SEH exceptions are thrown like normal C++ exceptions go to
-// Solution > Properties > Configuration Properties > C/C++ > Code Generation > Enable C++ Exceptions
-// and set it to "Yes with SEH Exceptions (/EHa)".
+#include <exception>
 
 class EzError final {
 public:
-	EzError(DWORD errorCode, LPCSTR file = NULL, UINT32 line = 0xFFFFFFFF);
-	EzError(HRESULT hr, LPCSTR file = NULL, UINT32 line = 0xFFFFFFFF);
-	EzError(LONGLONG ntLonger, LPCSTR file = NULL, UINT32 line = 0xFFFFFFFF);
-	EzError(LPCSTR message, LPCSTR file = NULL, UINT32 line = 0xFFFFFFFF);
-	EzError(LPCWSTR message, LPCSTR file = NULL, UINT32 line = 0xFFFFFFFF);
-	void Print() const;
-	LPCWSTR GetMessage() const;
-	DWORD GetErrorCode() const;
-	HRESULT GetHR() const;
-	NTSTATUS GetNT() const;
-	~EzError();
+	explicit EzError(std::exception ex, LPCSTR file, UINT32 line) noexcept;
+	explicit EzError(DWORD errorCode, LPCSTR file, UINT32 line) noexcept;
+	explicit EzError(HRESULT hr, LPCSTR file, UINT32 line) noexcept;
+	explicit EzError(NTSTATUS* pNt, LPCSTR file, UINT32 line) noexcept;
+	explicit EzError(LPCWSTR message, LPCSTR file, UINT32 line) noexcept;
+	explicit EzError(LPCSTR message, LPCSTR file, UINT32 line) noexcept;
+	
+	~EzError() noexcept;
+	EzError(const EzError& other) noexcept;
+	EzError& operator=(const EzError& other) noexcept;
 
-	EzError(const EzError& other);
-	EzError& operator=(const EzError& other);
+	void Print() const noexcept;
+	LPCSTR GetMessagePLZ() const noexcept;
+	DWORD GetErrorCode() const noexcept;
+	HRESULT GetHR() const noexcept;
+	NTSTATUS GetNT() const noexcept;
 
-	static void ThrowFromCode(DWORD errorCode, LPCSTR file = NULL, UINT32 line = 0xFFFFFFFF);
-	static void ThrowFromHR(HRESULT hr, LPCSTR file = NULL, UINT32 line = 0xFFFFFFFF);
-	static void ThrowFromNT(NTSTATUS nt, LPCSTR file = NULL, UINT32 line = 0xFFFFFFFF);
+	static void ThrowFromException(std::exception ex, LPCSTR file, UINT32 line);
+	static void ThrowFromCode(DWORD errorCode, LPCSTR file, UINT32 line);
+	static void ThrowFromHR(HRESULT hr, LPCSTR file, UINT32 line);
+	static void ThrowFromNT(NTSTATUS nt, LPCSTR file, UINT32 line);
+
+	static void SetSEHandler() noexcept;
 
 private:
-	LPWSTR _message = NULL;
+	LPSTR _message = NULL;
 	DWORD _errorCode = 0;
 	HRESULT _hr = 0;
 	NTSTATUS _nt = 0;
-};
-
-// This is unused but saved for future refrence cause it's useful.
-enum class EzConsoleColor : WORD {
-	Black = 0,
-	DarkRed = FOREGROUND_RED,
-	DarkGreen = FOREGROUND_GREEN,
-	DarkBlue = FOREGROUND_BLUE,
-	DarkYellow = FOREGROUND_RED | FOREGROUND_GREEN,
-	DarkCyan = FOREGROUND_GREEN | FOREGROUND_BLUE,
-	DarkMagenta = FOREGROUND_RED | FOREGROUND_BLUE,
-	DarkGrey = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE,
-	Grey = FOREGROUND_INTENSITY,
-	Red = FOREGROUND_RED | FOREGROUND_INTENSITY,
-	Green = FOREGROUND_GREEN | FOREGROUND_INTENSITY,
-	Blue = FOREGROUND_BLUE | FOREGROUND_INTENSITY,
-	Yellow = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY,
-	Cyan = FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY,
-	Magenta = FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY,
-	White = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY
 };

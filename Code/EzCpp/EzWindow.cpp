@@ -1,4 +1,4 @@
-// Approved 10/26/2024
+// Approved 11/14/2024
 
 #include "EzWindow.h"
 #include "EzError.h"
@@ -12,7 +12,7 @@ ATOM EzRegisterClass(const EzClassSettings* settings) {
 		wc.lpszClassName = settings->Name;
 	}
 	if (settings->WndProc == NULL) {
-		wc.lpfnWndProc = DefWindowProc;
+		wc.lpfnWndProc = DefWindowProcW;
 	}
 	else {
 		wc.lpfnWndProc = settings->WndProc;
@@ -21,7 +21,7 @@ ATOM EzRegisterClass(const EzClassSettings* settings) {
 	wc.hIcon = settings->Icon;
 	if (settings->Cursor == NULL) {
 		// No need to free cursors as they are reused across the application instead of being copied for each call to LoadCursor.
-		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+		wc.hCursor = LoadCursorW(NULL, IDC_ARROW);
 		if (wc.hCursor == NULL) {
 			EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
 		}
@@ -61,7 +61,7 @@ ATOM EzRegisterClass(const EzClassSettings* settings) {
 
 	wc.cbClsExtra = 0; // Allocate 0 extra bytes after the class declaration.
 	wc.cbWndExtra = 0; // Allocate 0 extra bytes after windows of this class.
-	wc.hInstance = GetModuleHandle(NULL); // WndProc is in the current hInstance.
+	wc.hInstance = GetModuleHandleW(NULL); // WndProc is in the current hInstance.
 	if (wc.hInstance == NULL) {
 		DeleteObject(wc.hbrBackground);
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
@@ -177,23 +177,23 @@ void EzShowWindow(HWND window, int showCommand) {
 
 BOOL EzMessagePumpOne(HWND window, BOOL wait) {
 	if (EzWindowIsDestroyed(window)) {
-		throw EzError(L"window has been destroyed");
+		throw EzError("window has been destroyed", __FILE__, __LINE__);
 	}
 	if (wait)
 	{
 		MSG message = { };
-		if (GetMessage(&message, window, 0, 0)) {
+		if (GetMessageW(&message, window, 0, 0)) {
 			TranslateMessage(&message);
-			DispatchMessage(&message);
+			DispatchMessageW(&message);
 		}
 		return TRUE;
 	}
 	else
 	{
 		MSG message = { };
-		if (PeekMessage(&message, window, 0, 0, PM_REMOVE)) {
+		if (PeekMessageW(&message, window, 0, 0, PM_REMOVE)) {
 			TranslateMessage(&message);
-			DispatchMessage(&message);
+			DispatchMessageW(&message);
 			return TRUE;
 		}
 		else {
@@ -203,26 +203,26 @@ BOOL EzMessagePumpOne(HWND window, BOOL wait) {
 }
 BOOL EzMessagePumpAll(HWND window) {
 	if (EzWindowIsDestroyed(window)) {
-		throw EzError(L"window has been destroyed");
+		throw EzError("window has been destroyed", __FILE__, __LINE__);
 	}
 	BOOL output = FALSE;
 	MSG message = { };
-	while (PeekMessage(&message, window, 0, 0, PM_REMOVE)) {
+	while (PeekMessageW(&message, window, 0, 0, PM_REMOVE)) {
 		TranslateMessage(&message);
-		DispatchMessage(&message);
+		DispatchMessageW(&message);
 		output = TRUE;
 	}
 	return output;
 }
 BOOL EzMessagePumpRun(HWND window) {
 	if (EzWindowIsDestroyed(window)) {
-		throw EzError(L"window has been destroyed");
+		throw EzError("window has been destroyed", __FILE__, __LINE__);
 	}
 	BOOL output = FALSE;
 	MSG message = { };
-	while (GetMessage(&message, window, 0, 0)) {
+	while (GetMessageW(&message, window, 0, 0)) {
 		TranslateMessage(&message);
-		DispatchMessage(&message);
+		DispatchMessageW(&message);
 		output = TRUE;
 	}
 	return output;
@@ -231,18 +231,18 @@ BOOL EzMessagePumpOne(BOOL wait) {
 	if (wait)
 	{
 		MSG message = { };
-		if (GetMessage(&message, NULL, 0, 0)) {
+		if (GetMessageW(&message, NULL, 0, 0)) {
 			TranslateMessage(&message);
-			DispatchMessage(&message);
+			DispatchMessageW(&message);
 		}
 		return TRUE;
 	}
 	else
 	{
 		MSG message = { };
-		if (PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) {
+		if (PeekMessageW(&message, NULL, 0, 0, PM_REMOVE)) {
 			TranslateMessage(&message);
-			DispatchMessage(&message);
+			DispatchMessageW(&message);
 			return TRUE;
 		}
 		else {
@@ -253,18 +253,18 @@ BOOL EzMessagePumpOne(BOOL wait) {
 BOOL EzMessagePumpAll() {
 	BOOL output = FALSE;
 	MSG message = { };
-	while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) {
+	while (PeekMessageW(&message, NULL, 0, 0, PM_REMOVE)) {
 		TranslateMessage(&message);
-		DispatchMessage(&message);
+		DispatchMessageW(&message);
 		output = TRUE;
 	}
 	return output;
 }
 void EzMessagePumpRun() {
 	MSG message = { };
-	while (GetMessage(&message, NULL, 0, 0)) {
+	while (GetMessageW(&message, NULL, 0, 0)) {
 		TranslateMessage(&message);
-		DispatchMessage(&message);
+		DispatchMessageW(&message);
 	}
 }
 
@@ -279,7 +279,7 @@ void EzSetWindowData(HWND window, void* data) {
 	DWORD lastError = 0;
 
 	SetLastError(0);
-	if (SetWindowLongPtr(window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(data)) == 0) {
+	if (SetWindowLongPtrW(window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(data)) == 0) {
 		lastError = GetLastError();
 		if (lastError != 0) {
 			EzError::ThrowFromCode(lastError, __FILE__, __LINE__);
@@ -290,7 +290,7 @@ void* EzGetWindowData(HWND window) {
 	DWORD lastError = 0;
 
 	SetLastError(0);
-	LONG_PTR userData = GetWindowLongPtr(window, GWLP_USERDATA);
+	LONG_PTR userData = GetWindowLongPtrW(window, GWLP_USERDATA);
 	if (userData == 0) {
 		lastError = GetLastError();
 		if (lastError != 0) {

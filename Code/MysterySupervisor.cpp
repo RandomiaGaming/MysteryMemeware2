@@ -87,12 +87,12 @@ static void FreeInteractivity() {
 	primaryStation = NULL;
 
 	EzSwitchToDesktop(originalDesktop);
-	if (!SetThreadDesktop(originalDesktop)) {
+	/*if (!SetThreadDesktop(originalDesktop)) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
-	if (!CloseDesktop(secureDesktop)) {
+	}*/
+	/*if (!CloseDesktop(secureDesktop)) {
 		EzError::ThrowFromCode(GetLastError(), __FILE__, __LINE__);
-	}
+	}*/
 	originalDesktop = NULL;
 	secureDesktop = NULL;
 
@@ -163,7 +163,7 @@ static void UnsetLLInputHooks() {
 }
 
 void MysterySupervisor::Init() {
-	EzSetProcessCritical(TRUE);
+	//EzSetProcessCritical(TRUE);
 
 	SetInteractive();
 
